@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func Router(app *fiber.App) {
@@ -15,6 +16,10 @@ func Router(app *fiber.App) {
 
 func main() {
 	app := fiber.New()
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "http://localhost:4007",
+	}))
+	Router(app)
 
 	app.Listen(":4007")
 }
