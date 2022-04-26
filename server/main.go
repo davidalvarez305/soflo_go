@@ -10,7 +10,7 @@ import (
 
 func Router(app *fiber.App) {
 	app.Get("/api/", func(c *fiber.Ctx) error {
-		data, err := actions.GetGoogleAuthToken()
+		data, err := actions.RefreshAuthToken()
 		if err != nil {
 			c.Status(400).JSON(fiber.Map{
 				"data": "Error while trying to get Google Auth Token.",
