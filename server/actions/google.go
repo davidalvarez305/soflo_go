@@ -24,7 +24,7 @@ type Data struct {
 	JavascriptOrigins       []string `json:"javascript_origins"`
 }
 
-func GetGoogleAuthToken() (Data, error) {
+func GetGoogleCredentials() (Data, error) {
 	data := Data{}
 
 	path := "/home/david/soflo_go/server/google.json"
@@ -50,4 +50,14 @@ func GetGoogleAuthToken() (Data, error) {
 
 	fmt.Println(data)
 	return data, nil
+}
+
+func GetGoogleAuthToken() (string, error) {
+	config, err := GetGoogleCredentials()
+	if err != nil {
+		fmt.Println("Error getting Google credentials")
+		return "nothing", err
+	}
+
+	url := config.AuthURI
 }
