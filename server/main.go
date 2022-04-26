@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/davidalvarez305/soflo_go/server/actions"
 	"github.com/davidalvarez305/soflo_go/server/database"
 	"github.com/davidalvarez305/soflo_go/server/sessions"
 	"github.com/gofiber/fiber/v2"
@@ -9,9 +10,15 @@ import (
 
 func Router(app *fiber.App) {
 	app.Get("/api/", func(c *fiber.Ctx) error {
-		msg := "Hello world!"
-		return c.JSON(fiber.Map{
-			"data": msg,
+		data, err := actions.GetGoogleAuthToken()
+		if err != nil {
+			c.Status(400).JSON(fiber.Map{
+				"data": "Error while trying to get Google Auth Token.",
+			})
+		}
+
+		return c.Status(200).JSON(fiber.Map{
+			"data": data,
 		})
 	})
 }
