@@ -7,7 +7,6 @@ import (
 
 func Router(app *fiber.App) {
 	api := app.Group("api")
-	google := api.Group("google")
-
-	google.Post("/", controllers.Google)
+	controllers.Google(api)
+	controllers.Amazon(api)
 }

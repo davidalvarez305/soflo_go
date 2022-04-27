@@ -265,7 +265,7 @@ func GetSeedKeywords(results GoogleKeywordResults) []string {
 	return data
 }
 
-func filterCommercialKeywords(results GoogleKeywordResults, query string) []string {
+func filterCommercialKeywords(results GoogleKeywordResults, seedKeyword string) []string {
 	var data []string
 	r := regexp.MustCompile("(used|cheap|deals|deal|sale|buy|online|on sale|discount|for sale|near me|best|for|[0-9]+)")
 
@@ -285,7 +285,7 @@ func filterCommercialKeywords(results GoogleKeywordResults, query string) []stri
 
 		conditionOne := compIndex > 80
 		conditionTwo := searchVol > 100
-		conditionThree := len(strings.Split(strings.TrimSpace(cleanKeyword), query)[0]) > 2
+		conditionThree := len(strings.Split(strings.TrimSpace(cleanKeyword), seedKeyword)[0]) > 2
 
 		if conditionOne && conditionTwo && conditionThree {
 			data = append(data, cleanKeyword)
