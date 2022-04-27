@@ -1,18 +1,31 @@
 package actions
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"fmt"
+	"strings"
+	"time"
+)
 
-func AmazonCrawler(c *fiber.Ctx) error {
-	type reqBody struct {
-		Searches string `json:"searches"`
-	}
+type AmazonSearchResultsPage struct {
+	Image    string `json:"image"`
+	Name     string `json:"name"`
+	Link     string `json:"link"`
+	Reviews  string `json:"reviews"`
+	Price    string `json:"price"`
+	Rating   string `json:"rating"`
+	ID       string `json:"id"`
+	Category string `json:"category"`
+}
 
-	var body reqBody
-	c.BodyParser(&body)
+func FetchCrawler(keyword string) []AmazonSearchResultsPage {
+	time.Sleep(1 * time.Second)
+	var data []AmazonSearchResultsPage
 
-	s := body.Searches
+	str := strings.Join(strings.Split(keyword, " "), "+")
 
-	return c.Status(200).JSON(fiber.Map{
-		"data": s,
-	})
+	serp := fmt.Sprintf("https://www.amazon.com/s?k=%s", str)
+
+	fmt.Println(serp)
+
+	return data
 }
