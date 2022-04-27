@@ -14,7 +14,13 @@ func CrawlAmazon(c *fiber.Ctx) error {
 	c.BodyParser(&body)
 
 	s := body.Keyword
-	actions.FetchCrawler(body.Keyword)
+	data := actions.FetchCrawler(body.Keyword)
+
+	if len(data) == 0 {
+		return c.Status(404).JSON(fiber.Map{
+			"data": "No results found",
+		})
+	}
 
 	return c.Status(200).JSON(fiber.Map{
 		"data": s,
