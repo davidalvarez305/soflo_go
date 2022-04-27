@@ -340,10 +340,9 @@ func QueryGoogle(query GoogleQuery) GoogleKeywordResults {
 	return results
 }
 
-func GetCommercialKeywords(seedKeywords []string, query string) []string {
+func GetCommercialKeywords(seedKeywords []string) []string {
 	var keywords []string
 	for i := 0; i < len(seedKeywords); i++ {
-		fmt.Println(time.Now())
 		s := [1]string{""}
 		s[0] = seedKeywords[i]
 
@@ -355,7 +354,7 @@ func GetCommercialKeywords(seedKeywords []string, query string) []string {
 		}
 
 		results := QueryGoogle(q)
-		k := filterCommercialKeywords(results, query)
+		k := filterCommercialKeywords(results, seedKeywords[i])
 		keywords = append(keywords, k...)
 	}
 

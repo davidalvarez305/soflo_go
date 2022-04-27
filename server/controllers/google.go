@@ -49,7 +49,7 @@ func Google(c *fiber.Ctx) error {
 		})
 	}
 
-	keywords := actions.GetCommercialKeywords(seedKeywords, keywordList[0])
+	keywords := actions.GetCommercialKeywords(seedKeywords)
 
 	if len(keywords) == 0 {
 		return c.Status(404).JSON(fiber.Map{
