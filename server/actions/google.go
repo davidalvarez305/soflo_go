@@ -6,10 +6,11 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 )
 
-type Data struct {
+type GoogleConfigData struct {
 	Type                    string   `json:"type"`
 	ProjectID               string   `json:"project_id"`
 	ProjectKeyId            string   `json:"private_key_id"`
@@ -26,8 +27,45 @@ type Data struct {
 	JavascriptOrigins       []string `json:"javascript_origins"`
 }
 
-func GetGoogleCredentials() (Data, error) {
-	data := Data{}
+type KeywordSeed struct {
+	Keywords []string `json:"keywords"`
+}
+
+type GoogleRequestData struct {
+	Pagesize    int         `json:"pageSize"`
+	KeywordSeed KeywordSeed `json:"keywordSeed"`
+}
+
+type GoogleQuery struct {
+	Data GoogleRequestData `json:"data"`
+}
+
+type MonthlySearchVolume struct {
+	Month           string `json:"month"`
+	Year            string `json:"year"`
+	MonthlySearches string `json:"monthlySearches"`
+}
+
+type keywordIdeaMetrics struct {
+	Competition            string                `json:"competition"`
+	MonthlySearchVolume    []MonthlySearchVolume `json:"monthlySearchVolumes"`
+	AvgMonthlySearches     string                `json:"avgMonthlySearches"`
+	CompetitionIndex       string                `json:"competitionIndex"`
+	LowTopOfPageBidMicros  string                `json:"lowTopOfPageBidMicros"`
+	HighTopOfPageBidMicros string                `json:"highTopOfPageBidMicros"`
+}
+
+type GoogleResult struct {
+	KeywordIdeaMetrics keywordIdeaMetrics `json:"keywordIdeaMetrics"`
+	text               string             `json:"text"`
+}
+
+type GoogleKeywordResults struct {
+	Results []GoogleResult `json:"results"`
+}
+
+func GetGoogleCredentials() (GoogleConfigData, error) {
+	data := GoogleConfigData{}
 
 	path := os.Getenv("GOOGLE_JSON_PATH")
 
@@ -195,4 +233,49 @@ func RefreshAuthToken() (string, error) {
 	json.NewDecoder(resp.Body).Decode(&data)
 
 	return data.Access_Token, nil
+}
+
+func QueryGoogle(query GoogleQuery) (GoogleKeywordResults, error) {
+	var results GoogleKeywordResults
+
+	authToken, err := RefreshAuthToken()
+
+	if err != nil {
+		fmt.Printf("Error refreshing token.")
+		return results, err
+	}
+
+	googleCustomerID := os.Getenv("GOOGLE_CUSTOMER_ID")
+	googleUrl := fmt.Sprintf("https://googleads.googleapis.com/v10/customers/%s:generateKeywordIdeas", googleCustomerID)
+	developerToken := os.Getenv("GOOGLE_DEVELOPER_TOKEN")
+	authorizationHeader := fmt.Sprintf("Bearer %s", authToken)
+
+	client := &http.Client{}
+	data := url.Values{}
+
+	data.Set("data", string(query))
+
+	req, err := http.NewRequest("POST", googleUrl, data)
+	if err != nil {
+		fmt.Println("Request failed: ", err)
+		return results, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("developer-token", developerToken)
+	req.Header.Set("Authorization", authorizationHeader)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error while getting auth token", err)
+		return results, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return results, nil
+	}
+
+	json.NewDecoder(resp.Body).Decode(&results)
+
+	return results, nil
 }
