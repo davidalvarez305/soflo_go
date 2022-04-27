@@ -8,8 +8,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type GoogleConfigData struct {
@@ -62,7 +64,7 @@ type GoogleKeywordResults struct {
 	Results []GoogleResult `json:"results"`
 }
 
-func GetGoogleCredentials() (GoogleConfigData, error) {
+func getGoogleCredentials() (GoogleConfigData, error) {
 	data := GoogleConfigData{}
 
 	path := os.Getenv("GOOGLE_JSON_PATH")
@@ -90,7 +92,7 @@ func GetGoogleCredentials() (GoogleConfigData, error) {
 }
 
 func RequestGoogleAuthToken() (string, error) {
-	config, err := GetGoogleCredentials()
+	config, err := getGoogleCredentials()
 	if err != nil {
 		fmt.Println("Error getting Google credentials")
 		return "", err
@@ -136,7 +138,7 @@ func RequestGoogleAuthToken() (string, error) {
 }
 
 func GetGoogleAccessToken(code string) (string, error) {
-	config, err := GetGoogleCredentials()
+	config, err := getGoogleCredentials()
 	if err != nil {
 		fmt.Println("Error getting Google credentials")
 		return "", err
@@ -192,13 +194,13 @@ func RefreshAuthToken() (string, error) {
 		Token_Type   string `json:"token_type"`
 	}
 
-	config, err := GetGoogleCredentials()
+	config, err := getGoogleCredentials()
 	if err != nil {
 		fmt.Println("Error getting Google credentials")
 		return "", err
 	}
 
-	refresh_token := os.Getenv("REFRESH_TOKEN")
+	refreshToken := os.Getenv("REFRESH_TOKEN")
 	client := &http.Client{}
 
 	url := config.TokenURI
@@ -212,7 +214,7 @@ func RefreshAuthToken() (string, error) {
 	q := req.URL.Query()
 	q.Add("client_id", config.OAuthClientID)
 	q.Add("client_secret", config.OAuthClientSecret)
-	q.Add("refresh_token", refresh_token)
+	q.Add("refresh_token", refreshToken)
 	q.Add("grant_type", "refresh_token")
 	req.URL.RawQuery = q.Encode()
 	resp, err := client.Do(req)
@@ -233,7 +235,7 @@ func RefreshAuthToken() (string, error) {
 	return data.Access_Token, nil
 }
 
-func filterSeedKeywords(results GoogleKeywordResults) []string {
+func GetSeedKeywords(results GoogleKeywordResults) []string {
 	var data []string
 
 	for i := 0; i < len(results.Results); i++ {
@@ -258,18 +260,50 @@ func filterSeedKeywords(results GoogleKeywordResults) []string {
 		}
 	}
 
+	fmt.Println("Seed Keywords: ", len(data))
+
 	return data
 }
 
-func QueryGoogle(query GoogleQuery) []string {
+func filterCommercialKeywords(results GoogleKeywordResults, query string) []string {
+	var data []string
+	r := regexp.MustCompile("(used|cheap|deals|deal|sale|buy|online|on sale|discount|for sale|near me|best|for|[0-9]+)")
+
+	for i := 0; i < len(results.Results); i++ {
+		cleanKeyword := r.ReplaceAllString(results.Results[i].Text, "")
+		fmt.Println(cleanKeyword)
+
+		compIndex, errOne := strconv.Atoi(results.Results[i].KeywordIdeaMetrics.CompetitionIndex)
+		if errOne != nil {
+			return data
+		}
+
+		searchVol, errTwo := strconv.Atoi(results.Results[i].KeywordIdeaMetrics.AvgMonthlySearches)
+		if errTwo != nil {
+			return data
+		}
+
+		conditionOne := compIndex > 80
+		conditionTwo := searchVol > 100
+		conditionThree := len(strings.Split(strings.TrimSpace(cleanKeyword), query)[0]) > 2
+
+		if conditionOne && conditionTwo && conditionThree {
+			data = append(data, cleanKeyword)
+		}
+	}
+
+	return data
+}
+
+func QueryGoogle(query GoogleQuery) GoogleKeywordResults {
+	time.Sleep(1 * time.Second)
 	var results GoogleKeywordResults
-	var keywords []string
 
 	authToken, err := RefreshAuthToken()
 
 	if err != nil {
 		fmt.Printf("Error refreshing token.")
-		return keywords
+		return results
 	}
 
 	googleCustomerID := os.Getenv("GOOGLE_CUSTOMER_ID")
@@ -282,13 +316,13 @@ func QueryGoogle(query GoogleQuery) []string {
 	out, e := json.Marshal(query)
 
 	if e != nil {
-		return keywords
+		return results
 	}
 
 	req, err := http.NewRequest("POST", googleUrl, bytes.NewBuffer(out))
 	if err != nil {
 		fmt.Println("Request failed: ", err)
-		return keywords
+		return results
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("developer-token", developerToken)
@@ -297,13 +331,35 @@ func QueryGoogle(query GoogleQuery) []string {
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("Error while querying Google", err)
-		return keywords
+		return results
 	}
 	defer resp.Body.Close()
 
 	json.NewDecoder(resp.Body).Decode(&results)
 
-	data := filterSeedKeywords(results)
+	return results
+}
 
-	return data
+func GetCommercialKeywords(seedKeywords []string, query string) []string {
+	var keywords []string
+	for i := 0; i < len(seedKeywords); i++ {
+		fmt.Println(time.Now())
+		s := [1]string{""}
+		s[0] = seedKeywords[i]
+
+		q := GoogleQuery{
+			Pagesize: 1000,
+			KeywordSeed: KeywordSeed{
+				Keywords: s,
+			},
+		}
+
+		results := QueryGoogle(q)
+		k := filterCommercialKeywords(results, query)
+		keywords = append(keywords, k...)
+	}
+
+	fmt.Println("Commercial Keywords: ", len(keywords))
+
+	return keywords
 }
