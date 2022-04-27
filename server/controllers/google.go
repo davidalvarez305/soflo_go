@@ -9,13 +9,28 @@ func Google(c *fiber.Ctx) error {
 	type reqBody struct {
 		Searches string `json:"searches"`
 	}
+	keywordList := [1]string{"hello"}
 
 	var body reqBody
 	c.BodyParser(&body)
+	keywordList[0] = body.Searches
 
-	actions.QueryGoogle()
+	q := actions.GoogleQuery{
+		Pagesize: 1000,
+		KeywordSeed: actions.KeywordSeed{
+			Keywords: keywordList,
+		},
+	}
+
+	keywords := actions.QueryGoogle(q)
+
+	if len(keywords) == 0 {
+		return c.Status(400).JSON(fiber.Map{
+			"data": "Bad Request.",
+		})
+	}
 
 	return c.Status(200).JSON(fiber.Map{
-		"data": "Hello world!",
+		"data": keywords,
 	})
 }

@@ -1,13 +1,15 @@
 package actions
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
+	"strconv"
+	"strings"
 )
 
 type GoogleConfigData struct {
@@ -28,16 +30,12 @@ type GoogleConfigData struct {
 }
 
 type KeywordSeed struct {
-	Keywords []string `json:"keywords"`
-}
-
-type GoogleRequestData struct {
-	Pagesize    int         `json:"pageSize"`
-	KeywordSeed KeywordSeed `json:"keywordSeed"`
+	Keywords [1]string `json:"keywords"`
 }
 
 type GoogleQuery struct {
-	Data GoogleRequestData `json:"data"`
+	Pagesize    int         `json:"pageSize"`
+	KeywordSeed KeywordSeed `json:"keywordSeed"`
 }
 
 type MonthlySearchVolume struct {
@@ -57,7 +55,7 @@ type keywordIdeaMetrics struct {
 
 type GoogleResult struct {
 	KeywordIdeaMetrics keywordIdeaMetrics `json:"keywordIdeaMetrics"`
-	text               string             `json:"text"`
+	Text               string             `json:"text"`
 }
 
 type GoogleKeywordResults struct {
@@ -235,14 +233,43 @@ func RefreshAuthToken() (string, error) {
 	return data.Access_Token, nil
 }
 
-func QueryGoogle(query GoogleQuery) (GoogleKeywordResults, error) {
+func filterSeedKeywords(results GoogleKeywordResults) []string {
+	var data []string
+
+	for i := 0; i < len(results.Results); i++ {
+		compIndex, errOne := strconv.Atoi(results.Results[i].KeywordIdeaMetrics.CompetitionIndex)
+		if errOne != nil {
+			return data
+		}
+
+		searchVol, errTwo := strconv.Atoi(results.Results[i].KeywordIdeaMetrics.AvgMonthlySearches)
+		if errTwo != nil {
+			return data
+		}
+
+		keywordLength := len(strings.Split(results.Results[i].Text, " "))
+
+		conditionOne := compIndex > 75
+		conditionTwo := searchVol > 10000
+		conditionThree := keywordLength >= 2 && keywordLength <= 3
+
+		if conditionOne && conditionTwo && conditionThree {
+			data = append(data, results.Results[i].Text)
+		}
+	}
+
+	return data
+}
+
+func QueryGoogle(query GoogleQuery) []string {
 	var results GoogleKeywordResults
+	var keywords []string
 
 	authToken, err := RefreshAuthToken()
 
 	if err != nil {
 		fmt.Printf("Error refreshing token.")
-		return results, err
+		return keywords
 	}
 
 	googleCustomerID := os.Getenv("GOOGLE_CUSTOMER_ID")
@@ -251,14 +278,17 @@ func QueryGoogle(query GoogleQuery) (GoogleKeywordResults, error) {
 	authorizationHeader := fmt.Sprintf("Bearer %s", authToken)
 
 	client := &http.Client{}
-	data := url.Values{}
 
-	data.Set("data", string(query))
+	out, e := json.Marshal(query)
 
-	req, err := http.NewRequest("POST", googleUrl, data)
+	if e != nil {
+		return keywords
+	}
+
+	req, err := http.NewRequest("POST", googleUrl, bytes.NewBuffer(out))
 	if err != nil {
 		fmt.Println("Request failed: ", err)
-		return results, err
+		return keywords
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("developer-token", developerToken)
@@ -266,16 +296,14 @@ func QueryGoogle(query GoogleQuery) (GoogleKeywordResults, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Error while getting auth token", err)
-		return results, err
+		fmt.Println("Error while querying Google", err)
+		return keywords
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		return results, nil
-	}
-
 	json.NewDecoder(resp.Body).Decode(&results)
 
-	return results, nil
+	data := filterSeedKeywords(results)
+
+	return data
 }
