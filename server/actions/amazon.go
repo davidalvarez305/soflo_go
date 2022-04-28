@@ -4,14 +4,17 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"time"
+
+	"golang.org/x/net/html"
 )
 
 type AmazonSearchResultsPage struct {
@@ -70,14 +73,56 @@ func FetchCrawler(keyword string) []AmazonSearchResultsPage {
 	}
 	defer resp.Body.Close()
 
-	respDump, err := httputil.DumpResponse(resp, true)
-	if err != nil {
-		log.Fatal(err)
-	}
+	ParseHtml(resp.Body)
 
-	fmt.Printf("RESPONSE:\n%s", string(respDump))
+	if err != nil {
+		fmt.Println("Error while writing response body from Amazon crawl.")
+		return results
+	}
 
 	json.NewDecoder(resp.Body).Decode(&results)
 
 	return results
+}
+
+func ParseHtml(r io.Reader) (string, error) {
+
+	reviewsRegex := regexp.MustCompile("[0-9,]+")
+	moneyRegex := regexp.MustCompile(`^\/[A-Z]([A-Za-z0-9]*[-%\/])+(\/dp\/[A-Z]+)*`)
+	amazonASIN := regexp.MustCompile(`(\/[A-Z0-9]{10,}\/)`)
+
+	doc := html.NewTokenizer(r)
+
+	for {
+		el := doc.Next()
+		var product AmazonSearchResultsPage
+
+		switch el {
+		case html.ErrorToken:
+			return "", doc.Err()
+		case html.StartTagToken, html.EndTagToken:
+			e := doc.Token()
+			if strings.Contains(e.String(), "a href=") {
+				el = doc.Next()
+				if el == html.TextToken {
+					if amazonASIN.MatchString(doc.Token().Data) {
+						product.Name = doc.Token().Data
+						fmt.Println(doc.Token().Data)
+					}
+				}
+			}
+			if strings.Contains(e.String(), "a-size-base") {
+				el = doc.Next()
+				if el == html.TextToken {
+					if reviewsRegex.MatchString(doc.Token().Data) {
+						product.Reviews = doc.Token().Data
+						fmt.Println(doc.Token().Data)
+					}
+					if moneyRegex.MatchString(doc.Token().Data) {
+						product.Price = doc.Token().Data
+					}
+				}
+			}
+		}
+	}
 }
