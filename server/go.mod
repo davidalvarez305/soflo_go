@@ -5,7 +5,9 @@ go 1.17
 require golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
 
 require (
+	github.com/PuerkitoBio/goquery v1.8.0 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
+	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/gofiber/fiber/v2 v2.32.0 // indirect
 	github.com/gofiber/storage/postgres v0.0.0-20220425214350-6420cf28236e // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect

@@ -2,7 +2,6 @@ package actions
 
 import (
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -14,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/net/html"
+	"github.com/PuerkitoBio/goquery"
 )
 
 type AmazonSearchResultsPage struct {
@@ -24,11 +23,10 @@ type AmazonSearchResultsPage struct {
 	Reviews  string `json:"reviews"`
 	Price    string `json:"price"`
 	Rating   string `json:"rating"`
-	ID       string `json:"id"`
 	Category string `json:"category"`
 }
 
-func FetchCrawler(keyword string) []AmazonSearchResultsPage {
+func FetchCrawler(keyword string, category string) []AmazonSearchResultsPage {
 	time.Sleep(1 * time.Second)
 	var results []AmazonSearchResultsPage
 
@@ -73,56 +71,61 @@ func FetchCrawler(keyword string) []AmazonSearchResultsPage {
 	}
 	defer resp.Body.Close()
 
-	ParseHtml(resp.Body)
+	products, err := ParseHtml(resp.Body, category)
+	results = products
 
 	if err != nil {
-		fmt.Println("Error while writing response body from Amazon crawl.")
-		return results
+		fmt.Println("Error while parsing HTML.")
 	}
-
-	json.NewDecoder(resp.Body).Decode(&results)
 
 	return results
 }
 
-func ParseHtml(r io.Reader) (string, error) {
+func ParseHtml(r io.Reader, category string) ([]AmazonSearchResultsPage, error) {
+	var products []AmazonSearchResultsPage
 
-	reviewsRegex := regexp.MustCompile("[0-9,]+")
-	moneyRegex := regexp.MustCompile(`^\/[A-Z]([A-Za-z0-9]*[-%\/])+(\/dp\/[A-Z]+)*`)
-	amazonASIN := regexp.MustCompile(`(\/[A-Z0-9]{10,}\/)`)
+	doc, err := goquery.NewDocumentFromReader(r)
+	if err != nil {
+		fmt.Println("Error trying to parse document.")
+		return products, err
+	}
 
-	doc := html.NewTokenizer(r)
-
-	for {
-		el := doc.Next()
+	doc.Find(".sg-col-inner").Each(func(i int, s *goquery.Selection) {
 		var product AmazonSearchResultsPage
 
-		switch el {
-		case html.ErrorToken:
-			return "", doc.Err()
-		case html.StartTagToken, html.EndTagToken:
-			e := doc.Token()
-			if strings.Contains(e.String(), "a href=") {
-				el = doc.Next()
-				if el == html.TextToken {
-					if amazonASIN.MatchString(doc.Token().Data) {
-						product.Name = doc.Token().Data
-						fmt.Println(doc.Token().Data)
-					}
-				}
+		reviewsRegex := regexp.MustCompile("[0-9,]+")
+		moneyRegex := regexp.MustCompile(`[\$]+?(\d+([,\.\d]+)?)`)
+		amazonASIN := regexp.MustCompile(`(\/[A-Z0-9]{10,}\/)`)
+
+		el, _ := s.Find("a").Attr("href")
+		cond := amazonASIN.MatchString(el)
+
+		if cond {
+			name := strings.Join(strings.Split(strings.Split(el, "/")[1], "-"), " ")
+			product.Name = name
+
+			rating := strings.Split(s.Find(".a-icon-alt").Text(), " ")[0]
+			product.Rating = rating
+
+			link := strings.Split(el, "/")[3]
+			product.Link = "https://amazon.com/dp/" + link + "?tag=sfac09-20&linkCode=ogi&th=1&psc=1"
+
+			image, _ := s.Find("img").Attr("src")
+			product.Image = image
+
+			product.Category = category
+
+			if len(moneyRegex.FindAllString(s.Find(".a-size-base").Text(), 3)) > 0 {
+				price := moneyRegex.FindAllString(s.Find(".a-size-base").Text(), 3)[0]
+				product.Price = price
 			}
-			if strings.Contains(e.String(), "a-size-base") {
-				el = doc.Next()
-				if el == html.TextToken {
-					if reviewsRegex.MatchString(doc.Token().Data) {
-						product.Reviews = doc.Token().Data
-						fmt.Println(doc.Token().Data)
-					}
-					if moneyRegex.MatchString(doc.Token().Data) {
-						product.Price = doc.Token().Data
-					}
-				}
+			if len(reviewsRegex.FindAllString(s.Find(".a-size-base").Text(), 2)) > 0 {
+				reviews := reviewsRegex.FindAllString(s.Find(".a-size-base").Text(), 3)[0]
+				product.Reviews = reviews
+
 			}
+			products = append(products, product)
 		}
-	}
+	})
+	return products, nil
 }
