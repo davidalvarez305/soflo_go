@@ -26,7 +26,7 @@ type AmazonSearchResultsPage struct {
 	Category string `json:"category"`
 }
 
-func FetchCrawler(keyword string, category string) []AmazonSearchResultsPage {
+func ScrapeSearchResultsPage(keyword string) []AmazonSearchResultsPage {
 	time.Sleep(1 * time.Second)
 	var results []AmazonSearchResultsPage
 
@@ -71,7 +71,7 @@ func FetchCrawler(keyword string, category string) []AmazonSearchResultsPage {
 	}
 	defer resp.Body.Close()
 
-	products, err := ParseHtml(resp.Body, category)
+	products, err := parseHtml(resp.Body, keyword)
 	results = products
 
 	if err != nil {
@@ -81,7 +81,7 @@ func FetchCrawler(keyword string, category string) []AmazonSearchResultsPage {
 	return results
 }
 
-func ParseHtml(r io.Reader, category string) ([]AmazonSearchResultsPage, error) {
+func parseHtml(r io.Reader, keyword string) ([]AmazonSearchResultsPage, error) {
 	var products []AmazonSearchResultsPage
 
 	doc, err := goquery.NewDocumentFromReader(r)
@@ -113,7 +113,7 @@ func ParseHtml(r io.Reader, category string) ([]AmazonSearchResultsPage, error) 
 			image, _ := s.Find("img").Attr("src")
 			product.Image = image
 
-			product.Category = category
+			product.Category = keyword
 
 			if len(moneyRegex.FindAllString(s.Find(".a-size-base").Text(), 3)) > 0 {
 				price := moneyRegex.FindAllString(s.Find(".a-size-base").Text(), 3)[0]

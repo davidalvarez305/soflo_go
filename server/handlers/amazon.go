@@ -13,7 +13,7 @@ func CrawlAmazon(c *fiber.Ctx) error {
 	var body reqBody
 	c.BodyParser(&body)
 
-	data := actions.FetchCrawler(body.Keyword, body.Keyword)
+	data := actions.ScrapeSearchResultsPage(body.Keyword)
 
 	if len(data) == 0 {
 		return c.Status(404).JSON(fiber.Map{
