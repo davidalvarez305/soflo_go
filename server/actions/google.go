@@ -343,13 +343,11 @@ func QueryGoogle(query GoogleQuery) GoogleKeywordResults {
 func GetCommercialKeywords(seedKeywords []string) []string {
 	var keywords []string
 	for i := 0; i < len(seedKeywords); i++ {
-		s := [1]string{""}
-		s[0] = seedKeywords[i]
 
 		q := GoogleQuery{
 			Pagesize: 1000,
 			KeywordSeed: KeywordSeed{
-				Keywords: s,
+				Keywords: [1]string{seedKeywords[i]},
 			},
 		}
 
