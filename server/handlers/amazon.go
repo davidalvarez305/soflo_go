@@ -27,7 +27,14 @@ func CrawlAmazon(c *fiber.Ctx) error {
 }
 
 func SearchPAAPI5(c *fiber.Ctx) error {
-	p := actions.SearchPaapi5Items("easton bbcor bats")
+	type reqBody struct {
+		Keyword string `json:"keyword"`
+	}
+
+	var body reqBody
+	c.BodyParser(&body)
+
+	p := actions.SearchPaapi5Items(body.Keyword)
 	return c.Status(200).JSON(fiber.Map{
 		"data": p,
 	})
