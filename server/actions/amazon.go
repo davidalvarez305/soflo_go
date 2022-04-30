@@ -13,17 +13,19 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"os"
 	"regexp"
 	"strings"
 	"time"
 
-	strftime "github.com/itchyny/timefmt-go"
-
 	"github.com/PuerkitoBio/goquery"
+	"github.com/davidalvarez305/soflo_go/server/types"
 )
+
+type PAAAPI5Response struct {
+	SearchResult types.SearchResult `json:"SearchResult"`
+}
 
 type AmazonSearchResultsPage struct {
 	Image    string `json:"image"`
@@ -95,6 +97,7 @@ func ScrapeSearchResultsPage(keyword string) []AmazonSearchResultsPage {
 
 	if err != nil {
 		fmt.Println("Error while parsing HTML.")
+		return products
 	}
 
 	return results
@@ -149,6 +152,14 @@ func parseHtml(r io.Reader, keyword string) ([]AmazonSearchResultsPage, error) {
 	return products, nil
 }
 
+func formatShortDate(dt time.Time) string {
+	return dt.UTC().Format("20060102")
+}
+
+func formatDate(dt time.Time) string {
+	return dt.UTC().Format("20060102T150405Z")
+}
+
 func makeHash(hash hash.Hash, b []byte) []byte {
 	hash.Reset()
 	hash.Write(b)
@@ -160,7 +171,7 @@ func buildCanonicalString(method, uri, query, signedHeaders, canonicalHeaders, p
 		method,
 		uri,
 		query,
-		canonicalHeaders,
+		canonicalHeaders + "\n",
 		signedHeaders,
 		payloadHash,
 	}, "\n")
@@ -175,12 +186,12 @@ func buildStringToSign(date, credentialScope, canonicalRequest string) string {
 	}, "\n")
 }
 
-func buildCanonicalHeaders(contentEncoding, host, xAmazonDate, amazonTarget string) string {
-	return strings.Join([]string{"content-encoding:" + contentEncoding, "host:" + host, "x-amz-date:" + xAmazonDate, "x-amz-target" + amazonTarget}, "\n")
+func buildCanonicalHeaders(contentType, contentEncoding, host, xAmazonDate, amazonTarget string) string {
+	return strings.Join([]string{"content-encoding:" + contentEncoding, "content-type:" + contentType, "host:" + host, "x-amz-date:" + xAmazonDate, "x-amz-target:" + amazonTarget}, "\n")
 }
 
-func buildSignature(strToSign string, sig string) (string, error) {
-	return hex.EncodeToString(HMACSHA256([]byte(sig), []byte(strToSign))), nil
+func buildSignature(strToSign string, sig []byte) (string, error) {
+	return hex.EncodeToString(HMACSHA256(sig, []byte(strToSign))), nil
 }
 
 func HMACSHA256(key []byte, data []byte) []byte {
@@ -189,8 +200,8 @@ func HMACSHA256(key []byte, data []byte) []byte {
 	return hash.Sum(nil)
 }
 
-func SearchPaapi5Items(keyword string) []AmazonSearchResultsPage {
-	var products []AmazonSearchResultsPage
+func SearchPaapi5Items(keyword string) PAAAPI5Response {
+	var products PAAAPI5Response
 
 	resources := []string{
 		"Images.Primary.Medium",
@@ -225,28 +236,29 @@ func SearchPaapi5Items(keyword string) []AmazonSearchResultsPage {
 	amazonTarget := "com.amazon.paapi5.v1.ProductAdvertisingAPIv1.SearchItems"
 	contentEncoding := "amz-1.0"
 	t := time.Now()
-	amazonDate := strftime.Format(t, "%Y%m%d")
-	xAmazonDate := strftime.Format(t, "%Y%m%dT%H%M%SZ")
+	amazonDate := formatShortDate(t)
+	xAmazonDate := formatDate(t)
 	canonicalUri := "/paapi5/searchitems"
 	canonicalQuerystring := ""
-	canonicalHeaders := buildCanonicalHeaders(contentEncoding, host, xAmazonDate, amazonTarget)
+	canonicalHeaders := buildCanonicalHeaders(contentType, contentEncoding, host, xAmazonDate, amazonTarget)
 	credentialScope := amazonDate + "/" + region + "/" + service + "/" + "aws4_request"
-	signedHeaders := "content-encoding;host;x-amz-date;x-amz-target"
+	signedHeaders := "content-encoding;content-type;host;x-amz-date;x-amz-target"
 
 	kSecret := os.Getenv("AWS_SECRET_ACCESS_KEY")
-	kDate := hex.EncodeToString(HMACSHA256([]byte("AWS4"+kSecret), []byte(amazonDate)))
-	kRegion := hex.EncodeToString(HMACSHA256([]byte(kDate), []byte(region)))
-	kService := hex.EncodeToString(HMACSHA256([]byte(kRegion), []byte(service)))
-	signingKey := hex.EncodeToString(HMACSHA256([]byte(kService), []byte("aws4_request")))
+	kDate := HMACSHA256([]byte("AWS4"+kSecret), []byte(amazonDate))
+	kRegion := HMACSHA256(kDate, []byte(region))
+	kService := HMACSHA256(kRegion, []byte(service))
+	signingKey := HMACSHA256(kService, []byte("aws4_request"))
 
 	canonicalRequest := buildCanonicalString(method, canonicalUri, canonicalQuerystring, signedHeaders, canonicalHeaders, hex.EncodeToString(makeHash(sha256.New(), body)))
 	stringToSign := buildStringToSign(xAmazonDate, credentialScope, canonicalRequest)
 	signature, err := buildSignature(stringToSign, signingKey)
 	if err != nil {
 		fmt.Println("Error while building signature.")
+		return products
 	}
 
-	authorizationHeader := "AWS4-HMAC-SHA256" + " Credential=" + os.Getenv("AWS_ACCESS_KEY_ID") + "/" + credentialScope + ", SignedHeaders=" + signedHeaders + ", Signature=" + signature
+	authorizationHeader := "AWS4-HMAC-SHA256" + " Credential=" + os.Getenv("AWS_ACCESS_KEY_ID") + "/" + credentialScope + " SignedHeaders=" + signedHeaders + " Signature=" + signature
 	client := &http.Client{}
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
 
@@ -255,8 +267,8 @@ func SearchPaapi5Items(keyword string) []AmazonSearchResultsPage {
 		return products
 	}
 
-	req.Header.Set("content-type", contentType)
 	req.Header.Set("content-encoding", contentEncoding)
+	req.Header.Set("content-type", contentType)
 	req.Header.Set("host", host)
 	req.Header.Set("x-amz-date", xAmazonDate)
 	req.Header.Set("x-amz-target", amazonTarget)
@@ -269,12 +281,6 @@ func SearchPaapi5Items(keyword string) []AmazonSearchResultsPage {
 	}
 	defer resp.Body.Close()
 
-	respDump, err := httputil.DumpResponse(resp, true)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("RESPONSE:\n%s", string(respDump))
-
+	json.NewDecoder(resp.Body).Decode(&products)
 	return products
 }
