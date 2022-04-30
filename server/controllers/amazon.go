@@ -10,4 +10,5 @@ func Amazon(router fiber.Router) {
 	amazon := router.Group("amazon")
 
 	amazon.Post("/crawl", handlers.CrawlAmazon)
+	amazon.Post("/paapi5", handlers.SearchPAAPI5)
 }

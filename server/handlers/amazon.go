@@ -25,3 +25,10 @@ func CrawlAmazon(c *fiber.Ctx) error {
 		"data": data,
 	})
 }
+
+func SearchPAAPI5(c *fiber.Ctx) error {
+	p := actions.SearchPaapi5Items("easton bbcor bats")
+	return c.Status(200).JSON(fiber.Map{
+		"data": p,
+	})
+}
