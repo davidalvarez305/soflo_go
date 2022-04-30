@@ -208,14 +208,15 @@ func SearchPaapi5Items(keyword string) []AmazonSearchResultsPage {
 	region := os.Getenv("AWS_REGION")
 	contentType := "application/json; charset=UTF-8"
 	amazonTarget := "com.amazon.paapi5.v1.ProductAdvertisingAPIv1.SearchItems"
+	contentEncoding := "amz-1.0"
 	t := time.Now()
 	amazonDate := strftime.Format(t, "%Y%m%d")
 	xAmazonDate := strftime.Format(t, "%Y%m%dT%H%M%SZ")
 	canonicalUri := "/paapi5/searchitems"
 	canonicalQuerystring := ""
-	canonicalHeaders := "content-type:" + contentType + "\n" + "host:" + host + "\n" + "x-amz-date:" + xAmazonDate + "\n" + "x-amz-target:" + amazonTarget + "\n"
+	canonicalHeaders := "content-type:" + contentType + "\n" + "host:" + host + "\n" + "x-amz-date:" + xAmazonDate + "\n" + "x-amz-target:" + amazonTarget + "\n" + "content-encoding:" + contentEncoding + "\n"
 	credentialScope := amazonDate + "/" + region + "/" + service + "/" + "aws4_request"
-	signedHeaders := "content-type;host;x-amz-date;x-amz-target"
+	signedHeaders := "content-type;host;x-amz-date;x-amz-target;content-encoding"
 
 	kSecret := os.Getenv("AWS_SECRET_ACCESS_KEY")
 	kDate := hex.EncodeToString(HMACSHA256([]byte("AWS4"+kSecret), []byte(amazonDate)))
@@ -241,10 +242,11 @@ func SearchPaapi5Items(keyword string) []AmazonSearchResultsPage {
 		return products
 	}
 
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("Host", host)
-	req.Header.Set("X-Amz-Date", xAmazonDate)
-	req.Header.Set("X-Amz-Target", amazonTarget)
+	req.Header.Set("content-type", contentType)
+	req.Header.Set("host", host)
+	req.Header.Set("x-amz-date", xAmazonDate)
+	req.Header.Set("x-amz-target", amazonTarget)
+	req.Header.Set("content-encoding", contentEncoding)
 	req.Header.Set("Authorization", authorizationHeader)
 
 	resp, err := client.Do(req)
