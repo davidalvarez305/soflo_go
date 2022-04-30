@@ -20,6 +20,8 @@ import (
 	"strings"
 	"time"
 
+	strftime "github.com/itchyny/timefmt-go"
+
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -207,7 +209,9 @@ func SearchPaapi5Items(keyword string) []AmazonSearchResultsPage {
 	contentType := "application/json; charset=UTF-8"
 	amazonTarget := "com.amazon.paapi5.v1.ProductAdvertisingAPIv1.SearchItems"
 	contentEncoding := "amz-1.0"
-	amazonDate := "20220429"
+	t := time.Now()
+	amazonDate := strftime.Format(t, "%Y%m%d")
+	xAmazonDate := strftime.Format(t, "%Y%m%dT%H%M%SZ")
 	canonicalUri := "/paapi5/searchitems"
 	canonicalQuerystring := ""
 	canonicalHeaders := "content-type:" + contentType + "\n" + "host:" + host + "\n" + "x-amz-date:" + amazonDate + "\n" + "x-amz-target:" + amazonTarget + "\n"
@@ -220,8 +224,10 @@ func SearchPaapi5Items(keyword string) []AmazonSearchResultsPage {
 	kService := hex.EncodeToString(HMACSHA256([]byte(kRegion), []byte(service)))
 	kSigning := hex.EncodeToString(HMACSHA256([]byte(kService), []byte("aws4_request")))
 
+	fmt.Println(xAmazonDate)
+	fmt.Println(amazonDate)
 	canonicalRequest := method + "\n" + canonicalUri + "\n" + canonicalQuerystring + "\n" + canonicalHeaders + signedHeaders + hex.EncodeToString(HMACSHA256([]byte(kSigning), body))
-	stringToSign := buildStringToSign(amazonDate, credentialScope, canonicalRequest)
+	stringToSign := buildStringToSign(xAmazonDate, credentialScope, canonicalRequest)
 
 	signature, err := buildSignature(stringToSign, kSigning)
 
@@ -239,7 +245,7 @@ func SearchPaapi5Items(keyword string) []AmazonSearchResultsPage {
 
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Host", host)
-	req.Header.Set("X-Amz-Date", "20220429T105653Z")
+	req.Header.Set("X-Amz-Date", xAmazonDate)
 	req.Header.Set("X-Amz-Target", amazonTarget)
 	req.Header.Set("Content-Encoding", contentEncoding)
 	req.Header.Set("Authorization", "AWS4-HMAC-SHA256"+" Credential="+credentialScope+" SignedHeaders="+signedHeaders+" Signature="+signature)

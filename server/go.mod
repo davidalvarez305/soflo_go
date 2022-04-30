@@ -22,6 +22,7 @@ require (
 	github.com/aws/smithy-go v1.11.2 // indirect
 	github.com/gofiber/fiber/v2 v2.32.0 // indirect
 	github.com/gofiber/storage/postgres v0.0.0-20220425214350-6420cf28236e // indirect
+	github.com/itchyny/timefmt-go v0.1.3 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.12.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
