@@ -13,7 +13,14 @@ func CreatePosts(c *fiber.Ctx) error {
 	var body reqBody
 	c.BodyParser(&body)
 
-	products := actions.GetProducts(body.Keyword)
+	products, err := actions.CreateReviewPosts(body.Keyword)
+
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"data": err,
+		})
+	}
+
 	return c.Status(200).JSON(fiber.Map{
 		"data": products,
 	})
