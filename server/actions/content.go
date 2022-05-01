@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-
-	"github.com/davidalvarez305/soflo_go/server/utils"
 )
 
 type DynamicContent struct {
@@ -66,8 +64,6 @@ func PullContentDictionary() []Dictionary {
 	}
 	defer resp.Body.Close()
 
-	s := utils.GenerateContentUtil(content)
-	fmt.Println(s)
 	json.NewDecoder(resp.Body).Decode(&content)
 	return content
 }
