@@ -11,4 +11,5 @@ func Router(app *fiber.App) {
 	controllers.Amazon(api)
 	controllers.ReviewPost(api)
 	controllers.DynamicContent(api)
+	controllers.User(api)
 }

@@ -26,6 +26,7 @@ func CreateCategorySlug(str string) string {
 func CreateReviewPostFields(input types.AmazonSearchResultsPage, dictionary []types.Dictionary, sentences []types.DynamicContent, categoryId int) models.ReviewPost {
 	name := strings.Join(strings.Split(strings.ToLower(input.Name), " "), "-")
 	slug := CreateCategorySlug(name)
+	replacedImage := strings.Replace(input.Image, "UL320", "UL640", 1)
 
 	data := GenerateContentUtil(input.Name, dictionary, sentences)
 
@@ -47,7 +48,7 @@ func CreateReviewPostFields(input types.AmazonSearchResultsPage, dictionary []ty
 		Faq_Question_1:                data.ReviewPostFaq_Question_1,
 		Faq_Question_2:                data.ReviewPostFaq_Question_2,
 		Faq_Question_3:                data.ReviewPostFaq_Question_3,
-		HorizontalCardProductImageUrl: input.Image,
+		HorizontalCardProductImageUrl: replacedImage,
 		HorizontalCardProductImageAlt: strings.ToLower(input.Name),
 	}
 
@@ -68,7 +69,7 @@ func insertProducts(products []types.AmazonSearchResultsPage) ([]models.Product,
 	}
 
 	fmt.Printf("Inserting %v products!", len(p))
-	ins := database.DB.Clauses(clause.OnConflict{DoNothing: true}).CreateInBatches(p, len(p))
+	ins := database.DB.Clauses(clause.OnConflict{DoNothing: true}).Save(p)
 
 	if ins.Error != nil {
 		return nil, ins.Error
@@ -104,7 +105,7 @@ func insertCategories(products []types.AmazonSearchResultsPage) ([]models.Catego
 	}
 
 	fmt.Printf("Inserting %v categories!", len(c))
-	db := database.DB.Clauses(clause.OnConflict{DoNothing: true}).CreateInBatches(categories, len(categories))
+	db := database.DB.Clauses(clause.OnConflict{DoNothing: true}).Save(categories)
 
 	if db.Error != nil {
 		fmt.Println("Error while trying to insert categories.")
@@ -146,7 +147,7 @@ func InsertReviewPosts(products []types.AmazonSearchResultsPage, dictionary []ty
 		posts = append(posts, p)
 	}
 
-	db := database.DB.Clauses(clause.OnConflict{DoNothing: true}).CreateInBatches(posts, len(posts))
+	db := database.DB.Clauses(clause.OnConflict{DoNothing: true}).Save(posts)
 
 	if db.Error != nil {
 		return db.Error

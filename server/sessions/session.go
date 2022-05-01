@@ -27,7 +27,7 @@ func Init() {
 	store := session.New(session.Config{
 		Expiration:     24 * 365 * time.Hour,
 		Storage:        storage,
-		KeyLookup:      "cookie:sf_id",
+		KeyLookup:      fmt.Sprintf("cookie:%s", os.Getenv("COOKIE_NAME")),
 		CookieSameSite: "lax",
 		KeyGenerator:   utils.UUID,
 	})
