@@ -1,53 +1,14 @@
 package utils
 
 import (
-	"fmt"
 	"math/rand"
 	"regexp"
 	"strings"
 
-	"github.com/davidalvarez305/soflo_go/server/actions"
+	"github.com/davidalvarez305/soflo_go/server/types"
 )
 
-type ProcessedDictionary struct {
-	Word    string   `json:"word"`
-	Tag     string   `json:"tag"`
-	Content []string `json:"content"`
-}
-
-type ProcessedContent struct {
-	ReviewPostTitle              []string `json:"ReviewPostTitle"`
-	ReviewPostContent            []string `json:"ReviewPostContent"`
-	ReviewPostHeadline           []string `json:"ReviewPostHeadline"`
-	ReviewPostIntro              []string `json:"ReviewPostIntro"`
-	ReviewPostDescription        []string `json:"ReviewPostDescription"`
-	ReviewPostProductLabel       []string `json:"ReviewPostProductLabel"`
-	ReviewPostProductDescription []string `json:"ReviewPostProductDescription"`
-	ReviewPostFaq_Answer_1       []string `json:"ReviewPostFaq_Answer_1"`
-	ReviewPostFaq_Answer_2       []string `json:"ReviewPostFaq_Answer_2"`
-	ReviewPostFaq_Answer_3       []string `json:"ReviewPostFaq_Answer_3"`
-	ReviewPostFaq_Question_1     []string `json:"ReviewPostFaq_Question_1"`
-	ReviewPostFaq_Question_2     []string `json:"ReviewPostFaq_Question_2"`
-	ReviewPostFaq_Question_3     []string `json:"ReviewPostFaq_Question_3"`
-}
-
-type FinalizedContent struct {
-	ReviewPostTitle              string `json:"ReviewPostTitle"`
-	ReviewPostContent            string `json:"ReviewPostContent"`
-	ReviewPostHeadline           string `json:"ReviewPostHeadline"`
-	ReviewPostIntro              string `json:"ReviewPostIntro"`
-	ReviewPostDescription        string `json:"ReviewPostDescription"`
-	ReviewPostProductLabel       string `json:"ReviewPostProductLabel"`
-	ReviewPostProductDescription string `json:"ReviewPostProductDescription"`
-	ReviewPostFaq_Answer_1       string `json:"ReviewPostFaq_Answer_1"`
-	ReviewPostFaq_Answer_2       string `json:"ReviewPostFaq_Answer_2"`
-	ReviewPostFaq_Answer_3       string `json:"ReviewPostFaq_Answer_3"`
-	ReviewPostFaq_Question_1     string `json:"ReviewPostFaq_Question_1"`
-	ReviewPostFaq_Question_2     string `json:"ReviewPostFaq_Question_2"`
-	ReviewPostFaq_Question_3     string `json:"ReviewPostFaq_Question_3"`
-}
-
-func filterSentences(sentence []actions.DynamicContent, paragraph string) []string {
+func filterSentences(sentence []types.DynamicContent, paragraph string) []string {
 	var s []string
 	for i := 0; i < len(sentence); i++ {
 		if sentence[i].Paragraph == paragraph {
@@ -57,7 +18,7 @@ func filterSentences(sentence []actions.DynamicContent, paragraph string) []stri
 	return s
 }
 
-func processSentence(productName, sentence string, dictionary []ProcessedDictionary) string {
+func processSentence(productName, sentence string, dictionary []types.ProcessedDictionary) string {
 	var s string
 
 	r := regexp.MustCompile(`(\([#@]\w+:[A-Z]+)\)|(\([#@]\w+)\)`)
@@ -74,7 +35,7 @@ func processSentence(productName, sentence string, dictionary []ProcessedDiction
 	return s
 }
 
-func switchWords(matchedWord string, dictionary []ProcessedDictionary) string {
+func switchWords(matchedWord string, dictionary []types.ProcessedDictionary) string {
 	for i := 0; i < len(dictionary); i++ {
 		if dictionary[i].Tag == matchedWord {
 			matchedWord = dictionary[i].Content[rand.Intn(len(dictionary[i].Content))]
@@ -84,7 +45,7 @@ func switchWords(matchedWord string, dictionary []ProcessedDictionary) string {
 
 }
 
-func spinnerFunction(productName, matchedWord string, dictionary []ProcessedDictionary) string {
+func spinnerFunction(productName, matchedWord string, dictionary []types.ProcessedDictionary) string {
 	if matchedWord == "(@ProductName)" {
 		matchedWord = productName
 		return matchedWord
@@ -108,8 +69,8 @@ func spinnerFunction(productName, matchedWord string, dictionary []ProcessedDict
 	return matchedWord
 }
 
-func selectRandomSentences(productName string, sentences []ProcessedContent, dictionary []ProcessedDictionary) FinalizedContent {
-	var content FinalizedContent
+func selectRandomSentences(productName string, sentences []types.ProcessedContent, dictionary []types.ProcessedDictionary) types.FinalizedContent {
+	var content types.FinalizedContent
 	for i := 0; i < len(sentences); i++ {
 		content.ReviewPostTitle = processSentence(productName, sentences[i].ReviewPostTitle[rand.Intn(len(sentences[i].ReviewPostTitle))], dictionary)
 		content.ReviewPostContent = processSentence(productName, sentences[i].ReviewPostContent[rand.Intn(len(sentences[i].ReviewPostContent))], dictionary)
@@ -128,20 +89,19 @@ func selectRandomSentences(productName string, sentences []ProcessedContent, dic
 	return content
 }
 
-func GenerateContentUtil(productName string, dictionary []actions.Dictionary, sentences []actions.DynamicContent) FinalizedContent {
-	var dict []ProcessedDictionary
-	var content []ProcessedContent
-	var finalContent FinalizedContent
+func GenerateContentUtil(productName string, dictionary []types.Dictionary, sentences []types.DynamicContent) types.FinalizedContent {
+	var dict []types.ProcessedDictionary
+	var content []types.ProcessedContent
+	var finalContent types.FinalizedContent
 
 	for i := 0; i < len(dictionary); i++ {
-		var d = ProcessedDictionary{
+		var d = types.ProcessedDictionary{
 			Word:    dictionary[i].Word,
 			Tag:     dictionary[i].Tag,
 			Content: strings.Split(dictionary[i].Content, "///"),
 		}
 		dict = append(dict, d)
 	}
-	fmt.Printf("%v", len(dict))
 
 	for i := 0; i < len(sentences); i++ {
 		a := filterSentences(sentences, "ReviewPostTitle")
@@ -157,7 +117,7 @@ func GenerateContentUtil(productName string, dictionary []actions.Dictionary, se
 		l := filterSentences(sentences, "ReviewPostFaq_Question_1")
 		m := filterSentences(sentences, "ReviewPostFaq_Question_2")
 		n := filterSentences(sentences, "ReviewPostFaq_Question_3")
-		var final = ProcessedContent{
+		var final = types.ProcessedContent{
 			ReviewPostTitle:              a,
 			ReviewPostContent:            b,
 			ReviewPostHeadline:           c,

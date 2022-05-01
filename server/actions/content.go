@@ -5,21 +5,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+
+	"github.com/davidalvarez305/soflo_go/server/types"
 )
 
-type DynamicContent struct {
-	Content   string `json:"content"`
-	Template  string `json:"template"`
-	Paragraph string `json:"paragraph"`
-}
-type Dictionary struct {
-	Word    string `json:"word"`
-	Tag     string `json:"tag"`
-	Content string `json:"content"`
-}
-
-func PullDynamicContent() []DynamicContent {
-	var content []DynamicContent
+func PullDynamicContent() []types.DynamicContent {
+	var content []types.DynamicContent
 	contentApi := os.Getenv("DYNAMIC_CONTENT_API") + "/api/get-dynamic-content/?template=ReviewPost"
 
 	client := &http.Client{}
@@ -43,8 +34,8 @@ func PullDynamicContent() []DynamicContent {
 	return content
 }
 
-func PullContentDictionary() []Dictionary {
-	var content []Dictionary
+func PullContentDictionary() []types.Dictionary {
+	var content []types.Dictionary
 	contentApi := os.Getenv("DYNAMIC_CONTENT_API") + "/api/get-dictionary/"
 
 	client := &http.Client{}

@@ -23,33 +23,9 @@ import (
 	"github.com/davidalvarez305/soflo_go/server/types"
 )
 
-type PAAAPI5Response struct {
-	SearchResult types.SearchResult `json:"SearchResult"`
-}
-
-type AmazonSearchResultsPage struct {
-	Image    string `json:"image"`
-	Name     string `json:"name"`
-	Link     string `json:"link"`
-	Reviews  string `json:"reviews"`
-	Price    string `json:"price"`
-	Rating   string `json:"rating"`
-	Category string `json:"category"`
-}
-
-type AmazonPaapi5RequestBody struct {
-	Marketplace string   `json:"Marketplace"`
-	PartnerType string   `json:"PartnerType"`
-	PartnerTag  string   `json:"PartnerTag"`
-	Keywords    string   `json:"Keywords"`
-	SearchIndex string   `json:"SearchIndex"`
-	ItemCount   int      `json:"ItemCount"`
-	Resources   []string `json:"Resources"`
-}
-
-func ScrapeSearchResultsPage(keyword string) []AmazonSearchResultsPage {
+func ScrapeSearchResultsPage(keyword string) []types.AmazonSearchResultsPage {
 	time.Sleep(1 * time.Second)
-	var results []AmazonSearchResultsPage
+	var results []types.AmazonSearchResultsPage
 
 	str := strings.Join(strings.Split(keyword, " "), "+")
 
@@ -103,8 +79,8 @@ func ScrapeSearchResultsPage(keyword string) []AmazonSearchResultsPage {
 	return results
 }
 
-func parseHtml(r io.Reader, keyword string) ([]AmazonSearchResultsPage, error) {
-	var products []AmazonSearchResultsPage
+func parseHtml(r io.Reader, keyword string) ([]types.AmazonSearchResultsPage, error) {
+	var products []types.AmazonSearchResultsPage
 
 	doc, err := goquery.NewDocumentFromReader(r)
 	if err != nil {
@@ -113,7 +89,7 @@ func parseHtml(r io.Reader, keyword string) ([]AmazonSearchResultsPage, error) {
 	}
 
 	doc.Find(".sg-col-inner").Each(func(i int, s *goquery.Selection) {
-		var product AmazonSearchResultsPage
+		var product types.AmazonSearchResultsPage
 
 		reviewsRegex := regexp.MustCompile("[0-9,]+")
 		moneyRegex := regexp.MustCompile(`[\$]+?(\d+([,\.\d]+)?)`)
@@ -200,8 +176,8 @@ func HMACSHA256(key []byte, data []byte) []byte {
 	return hash.Sum(nil)
 }
 
-func SearchPaapi5Items(keyword string) PAAAPI5Response {
-	var products PAAAPI5Response
+func SearchPaapi5Items(keyword string) types.PAAAPI5Response {
+	var products types.PAAAPI5Response
 
 	resources := []string{
 		"Images.Primary.Medium",
@@ -211,7 +187,7 @@ func SearchPaapi5Items(keyword string) PAAAPI5Response {
 		"ItemInfo.Features",
 		"ItemInfo.ProductInfo"}
 
-	d := AmazonPaapi5RequestBody{
+	d := types.AmazonPaapi5RequestBody{
 		Marketplace: "www.amazon.com",
 		PartnerType: "Associates",
 		PartnerTag:  os.Getenv("AMAZON_PARTNER_TAG"),

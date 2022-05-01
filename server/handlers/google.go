@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/davidalvarez305/soflo_go/server/actions"
+	"github.com/davidalvarez305/soflo_go/server/types"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -26,9 +27,9 @@ func GetGoogleKeywords(c *fiber.Ctx) error {
 
 	keywordList[0] = body.Searches
 
-	q := actions.GoogleQuery{
+	q := types.GoogleQuery{
 		Pagesize: 1000,
-		KeywordSeed: actions.KeywordSeed{
+		KeywordSeed: types.KeywordSeed{
 			Keywords: keywordList,
 		},
 	}

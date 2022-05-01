@@ -2,14 +2,16 @@ package actions
 
 import (
 	"fmt"
+
+	"github.com/davidalvarez305/soflo_go/server/types"
 )
 
-func GetProducts(keyword string) []AmazonSearchResultsPage {
-	var products []AmazonSearchResultsPage
+func GetProducts(keyword string) []types.AmazonSearchResultsPage {
+	var products []types.AmazonSearchResultsPage
 
-	q := GoogleQuery{
+	q := types.GoogleQuery{
 		Pagesize: 50,
-		KeywordSeed: KeywordSeed{
+		KeywordSeed: types.KeywordSeed{
 			Keywords: [1]string{keyword},
 		},
 	}
@@ -37,7 +39,7 @@ func GetProducts(keyword string) []AmazonSearchResultsPage {
 	return products
 }
 
-func PersistProducts(products []AmazonSearchResultsPage) bool {
+func PersistProducts(products []types.AmazonSearchResultsPage) bool {
 
 	return true
 }
