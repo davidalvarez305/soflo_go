@@ -7,7 +7,24 @@ import (
 )
 
 func GetContent(c *fiber.Ctx) error {
-	data := actions.PullDynamicContent()
+	data := actions.PullContentDictionary()
+	sentences := actions.PullDynamicContent()
+
+	s := utils.GenerateContentUtil("Adidas Powerlift 4", data, sentences)
+
+	if len(data) == 0 {
+		return c.Status(404).JSON(fiber.Map{
+			"data": "No results found",
+		})
+	}
+
+	return c.Status(200).JSON(fiber.Map{
+		"data": s,
+	})
+}
+
+func GetDictionary(c *fiber.Ctx) error {
+	data := actions.PullContentDictionary()
 
 	if len(data) == 0 {
 		return c.Status(404).JSON(fiber.Map{
@@ -17,21 +34,5 @@ func GetContent(c *fiber.Ctx) error {
 
 	return c.Status(200).JSON(fiber.Map{
 		"data": data,
-	})
-}
-
-func GetDictionary(c *fiber.Ctx) error {
-	data := actions.PullContentDictionary()
-	sentences := actions.PullDynamicContent()
-
-	s := utils.GenerateContentUtil(data, sentences)
-	if len(data) == 0 {
-		return c.Status(404).JSON(fiber.Map{
-			"data": "No results found",
-		})
-	}
-
-	return c.Status(200).JSON(fiber.Map{
-		"data": s,
 	})
 }

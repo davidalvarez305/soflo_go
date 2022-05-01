@@ -57,7 +57,7 @@ func filterSentences(sentence []actions.DynamicContent, paragraph string) []stri
 	return s
 }
 
-func processSentence(sentence string, dictionary []ProcessedDictionary) string {
+func processSentence(productName, sentence string, dictionary []ProcessedDictionary) string {
 	var s string
 
 	r := regexp.MustCompile(`(\([#@]\w+:[A-Z]+)\)|(\([#@]\w+)\)`)
@@ -68,7 +68,7 @@ func processSentence(sentence string, dictionary []ProcessedDictionary) string {
 		if i == 0 {
 			s = sentence
 		}
-		switched := strings.Replace(s, m[i], spinnerFunction(m[i], dictionary), -1)
+		switched := strings.Replace(s, m[i], spinnerFunction(productName, m[i], dictionary), -1)
 		s = switched
 	}
 	return s
@@ -84,46 +84,51 @@ func switchWords(matchedWord string, dictionary []ProcessedDictionary) string {
 
 }
 
-func spinnerFunction(matchedWord string, dictionary []ProcessedDictionary) string {
-	splitStr := strings.Split(matchedWord, ":")
-	if len(splitStr) == 2 {
-		s := splitStr[0] + ")"
-		matchedWord = switchWords(s, dictionary)
-		if splitStr[1] == "UU)" {
-			matchedWord = strings.Title(matchedWord)
-		}
-		if splitStr[1] == "U)" {
-			ss := strings.Split(matchedWord, "")
-			ss[0] = strings.ToUpper(ss[0])
-			matchedWord = strings.Join(ss, "")
-		}
+func spinnerFunction(productName, matchedWord string, dictionary []ProcessedDictionary) string {
+	if matchedWord == "(@ProductName)" {
+		matchedWord = productName
+		return matchedWord
 	} else {
-		matchedWord = switchWords(matchedWord, dictionary)
+		splitStr := strings.Split(matchedWord, ":")
+		if len(splitStr) == 2 {
+			s := splitStr[0] + ")"
+			matchedWord = switchWords(s, dictionary)
+			if splitStr[1] == "UU)" {
+				matchedWord = strings.Title(matchedWord)
+			}
+			if splitStr[1] == "U)" {
+				ss := strings.Split(matchedWord, "")
+				ss[0] = strings.ToUpper(ss[0])
+				matchedWord = strings.Join(ss, "")
+			}
+		} else {
+			matchedWord = switchWords(matchedWord, dictionary)
+		}
 	}
 	return matchedWord
 }
 
-func selectRandomSentences(sentences []ProcessedContent, dictionary []ProcessedDictionary) FinalizedContent {
+func selectRandomSentences(productName string, sentences []ProcessedContent, dictionary []ProcessedDictionary) FinalizedContent {
 	var content FinalizedContent
 	for i := 0; i < len(sentences); i++ {
-		content.ReviewPostTitle = processSentence(sentences[i].ReviewPostTitle[rand.Intn(len(sentences[i].ReviewPostTitle))], dictionary)
-		content.ReviewPostContent = processSentence(sentences[i].ReviewPostContent[rand.Intn(len(sentences[i].ReviewPostContent))], dictionary)
-		content.ReviewPostHeadline = processSentence(sentences[i].ReviewPostHeadline[rand.Intn(len(sentences[i].ReviewPostHeadline))], dictionary)
-		content.ReviewPostIntro = processSentence(sentences[i].ReviewPostIntro[rand.Intn(len(sentences[i].ReviewPostIntro))], dictionary)
-		content.ReviewPostDescription = processSentence(sentences[i].ReviewPostDescription[rand.Intn(len(sentences[i].ReviewPostDescription))], dictionary)
-		content.ReviewPostProductLabel = processSentence(sentences[i].ReviewPostProductLabel[rand.Intn(len(sentences[i].ReviewPostProductLabel))], dictionary)
-		content.ReviewPostProductDescription = processSentence(sentences[i].ReviewPostProductDescription[rand.Intn(len(sentences[i].ReviewPostProductDescription))], dictionary)
-		content.ReviewPostFaq_Answer_1 = processSentence(sentences[i].ReviewPostFaq_Answer_1[rand.Intn(len(sentences[i].ReviewPostFaq_Answer_1))], dictionary)
-		content.ReviewPostFaq_Answer_2 = processSentence(sentences[i].ReviewPostFaq_Answer_2[rand.Intn(len(sentences[i].ReviewPostFaq_Answer_2))], dictionary)
-		content.ReviewPostFaq_Answer_3 = processSentence(sentences[i].ReviewPostFaq_Answer_3[rand.Intn(len(sentences[i].ReviewPostFaq_Answer_3))], dictionary)
-		content.ReviewPostFaq_Question_1 = processSentence(sentences[i].ReviewPostFaq_Question_1[rand.Intn(len(sentences[i].ReviewPostFaq_Question_1))], dictionary)
-		content.ReviewPostFaq_Question_2 = processSentence(sentences[i].ReviewPostFaq_Question_2[rand.Intn(len(sentences[i].ReviewPostFaq_Question_2))], dictionary)
-		content.ReviewPostFaq_Question_3 = processSentence(sentences[i].ReviewPostFaq_Question_3[rand.Intn(len(sentences[i].ReviewPostFaq_Question_3))], dictionary)
+		content.ReviewPostTitle = processSentence(productName, sentences[i].ReviewPostTitle[rand.Intn(len(sentences[i].ReviewPostTitle))], dictionary)
+		content.ReviewPostContent = processSentence(productName, sentences[i].ReviewPostContent[rand.Intn(len(sentences[i].ReviewPostContent))], dictionary)
+		content.ReviewPostHeadline = processSentence(productName, sentences[i].ReviewPostHeadline[rand.Intn(len(sentences[i].ReviewPostHeadline))], dictionary)
+		content.ReviewPostIntro = processSentence(productName, sentences[i].ReviewPostIntro[rand.Intn(len(sentences[i].ReviewPostIntro))], dictionary)
+		content.ReviewPostDescription = processSentence(productName, sentences[i].ReviewPostDescription[rand.Intn(len(sentences[i].ReviewPostDescription))], dictionary)
+		content.ReviewPostProductLabel = processSentence(productName, sentences[i].ReviewPostProductLabel[rand.Intn(len(sentences[i].ReviewPostProductLabel))], dictionary)
+		content.ReviewPostProductDescription = processSentence(productName, sentences[i].ReviewPostProductDescription[rand.Intn(len(sentences[i].ReviewPostProductDescription))], dictionary)
+		content.ReviewPostFaq_Answer_1 = processSentence(productName, sentences[i].ReviewPostFaq_Answer_1[rand.Intn(len(sentences[i].ReviewPostFaq_Answer_1))], dictionary)
+		content.ReviewPostFaq_Answer_2 = processSentence(productName, sentences[i].ReviewPostFaq_Answer_2[rand.Intn(len(sentences[i].ReviewPostFaq_Answer_2))], dictionary)
+		content.ReviewPostFaq_Answer_3 = processSentence(productName, sentences[i].ReviewPostFaq_Answer_3[rand.Intn(len(sentences[i].ReviewPostFaq_Answer_3))], dictionary)
+		content.ReviewPostFaq_Question_1 = processSentence(productName, sentences[i].ReviewPostFaq_Question_1[rand.Intn(len(sentences[i].ReviewPostFaq_Question_1))], dictionary)
+		content.ReviewPostFaq_Question_2 = processSentence(productName, sentences[i].ReviewPostFaq_Question_2[rand.Intn(len(sentences[i].ReviewPostFaq_Question_2))], dictionary)
+		content.ReviewPostFaq_Question_3 = processSentence(productName, sentences[i].ReviewPostFaq_Question_3[rand.Intn(len(sentences[i].ReviewPostFaq_Question_3))], dictionary)
 	}
 	return content
 }
 
-func GenerateContentUtil(dictionary []actions.Dictionary, sentences []actions.DynamicContent) FinalizedContent {
+func GenerateContentUtil(productName string, dictionary []actions.Dictionary, sentences []actions.DynamicContent) FinalizedContent {
 	var dict []ProcessedDictionary
 	var content []ProcessedContent
 	var finalContent FinalizedContent
@@ -169,6 +174,6 @@ func GenerateContentUtil(dictionary []actions.Dictionary, sentences []actions.Dy
 		}
 		content = append(content, final)
 	}
-	finalContent = selectRandomSentences(content, dict)
+	finalContent = selectRandomSentences(productName, content, dict)
 	return finalContent
 }
