@@ -67,6 +67,7 @@ func insertProducts(products []types.AmazonSearchResultsPage) ([]models.Product,
 		p = append(p, product)
 	}
 
+	fmt.Printf("Inserting %v products!", len(p))
 	ins := database.DB.Clauses(clause.OnConflict{DoNothing: true}).CreateInBatches(p, len(p))
 
 	if ins.Error != nil {
@@ -102,6 +103,7 @@ func insertCategories(products []types.AmazonSearchResultsPage) ([]models.Catego
 		categories = append(categories, cat)
 	}
 
+	fmt.Printf("Inserting %v categories!", len(c))
 	db := database.DB.Clauses(clause.OnConflict{DoNothing: true}).CreateInBatches(categories, len(categories))
 
 	if db.Error != nil {
@@ -109,7 +111,7 @@ func insertCategories(products []types.AmazonSearchResultsPage) ([]models.Catego
 		return nil, db.Error
 	}
 
-	sel := database.DB.Raw("SELECT * FROM category;").Scan(&categories)
+	sel := database.DB.Raw("SELECT * FROM categories;").Scan(&categories)
 
 	if sel.Error != nil {
 		return nil, sel.Error
