@@ -1,18 +1,21 @@
 package handlers
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/davidalvarez305/soflo_go/server/actions"
 	"github.com/davidalvarez305/soflo_go/server/database"
 	"github.com/davidalvarez305/soflo_go/server/models"
 	"github.com/davidalvarez305/soflo_go/server/sessions"
+	"github.com/davidalvarez305/soflo_go/server/types"
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
 )
 
 func CreateUser(c *fiber.Ctx) error {
-	var user models.User
+	var u types.User
+	var user types.UserRequestBody
 	err := c.BodyParser(&user)
 
 	if err != nil {
@@ -21,7 +24,26 @@ func CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	data, err2 := actions.CreateUser(user)
+	if user.Password == "" || user.Username == "" {
+		return c.Status(400).JSON(fiber.Map{
+			"data": "Missing Fields.",
+		})
+	}
+
+	hashedPassword, err3 := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+
+	if err3 != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Error hashing password",
+		})
+	}
+
+	u.Username = user.Username
+	u.Password = hashedPassword
+
+	fmt.Printf("User %v", u)
+
+	data, err2 := actions.CreateUser(u)
 
 	if err2 != nil {
 		return c.Status(500).JSON(fiber.Map{
@@ -83,14 +105,9 @@ func Logout(c *fiber.Ctx) error {
 }
 
 func Login(c *fiber.Ctx) error {
+	var u types.UserRequestBody
 	var user models.User
-	type body struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
-	var reqBody body
-	err := c.BodyParser(&reqBody)
+	err := c.BodyParser(&u)
 
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{
@@ -98,23 +115,15 @@ func Login(c *fiber.Ctx) error {
 		})
 	}
 
-	result := database.DB.Where("email = ?", &reqBody.Email).First(&user)
+	result := database.DB.Where("username = ?", &u.Username).First(&user)
 
 	if result.Error != nil {
 		return c.Status(404).JSON(fiber.Map{
-			"error": "Incorrect e-mail.",
+			"error": "Incorrect username.",
 		})
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(reqBody.Password), bcrypt.DefaultCost)
-
-	if err != nil {
-		return c.Status(500).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-
-	err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(user.Password))
+	err = bcrypt.CompareHashAndPassword(user.Password, []byte(u.Password))
 
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{
