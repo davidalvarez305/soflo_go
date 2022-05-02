@@ -82,7 +82,9 @@ func Logout(c *fiber.Ctx) error {
 
 	sess, err := sessions.Sessions.Get(c)
 	if err != nil {
-		panic(err)
+		return c.Status(500).JSON(fiber.Map{
+			"data": "Unable to get cookie.",
+		})
 	}
 
 	k := sess.Get(os.Getenv("COOKIE_NAME"))
@@ -135,13 +137,17 @@ func Login(c *fiber.Ctx) error {
 
 	sess, err := sessions.Sessions.Get(c)
 	if err != nil {
-		panic(err)
+		return c.Status(500).JSON(fiber.Map{
+			"data": "Unable to get cookie.",
+		})
 	}
 
 	sess.Set(os.Getenv("COOKIE_NAME"), id)
 
 	if err := sess.Save(); err != nil {
-		panic(err)
+		return c.Status(500).JSON(fiber.Map{
+			"data": "Unable to save session.",
+		})
 	}
 
 	return c.Status(200).JSON(fiber.Map{
