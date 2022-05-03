@@ -17,7 +17,7 @@ func FilterCommercialKeywords(results types.GoogleKeywordResults, seedKeyword st
 	r := regexp.MustCompile("(used|cheap|deals|deal|sale|buy|online|on sale|discount|for sale|near me|best|for|[0-9]+)")
 
 	for i := 0; i < len(results.Results); i++ {
-		cleanKeyword := r.ReplaceAllString(results.Results[i].Text, "")
+		cleanKeyword := strings.TrimSpace(r.ReplaceAllString(results.Results[i].Text, ""))
 		fmt.Println(cleanKeyword)
 
 		compIndex, errOne := strconv.Atoi(results.Results[i].KeywordIdeaMetrics.CompetitionIndex)
@@ -30,9 +30,9 @@ func FilterCommercialKeywords(results types.GoogleKeywordResults, seedKeyword st
 			return data
 		}
 
-		conditionOne := compIndex > 80
+		conditionOne := compIndex == 100
 		conditionTwo := searchVol > 100
-		conditionThree := len(strings.Split(strings.TrimSpace(cleanKeyword), seedKeyword)[0]) > 2
+		conditionThree := len(strings.Split(strings.TrimSpace(cleanKeyword), seedKeyword)[0]) >= 2
 
 		if conditionOne && conditionTwo && conditionThree {
 			data = append(data, cleanKeyword)

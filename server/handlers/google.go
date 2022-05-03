@@ -10,14 +10,13 @@ import (
 
 func GetCommercialKeywords(c *fiber.Ctx) error {
 	type reqBody struct {
-		Searches string `json:"searches"`
+		Keyword string `json:"keyword"`
 	}
-	keywordList := [1]string{""}
 
 	var body reqBody
 	c.BodyParser(&body)
 
-	s := strings.Split(body.Searches, "\n")
+	s := strings.Split(body.Keyword, "\n")
 
 	if len(s) > 1 {
 		return c.Status(400).JSON(fiber.Map{
@@ -25,12 +24,10 @@ func GetCommercialKeywords(c *fiber.Ctx) error {
 		})
 	}
 
-	keywordList[0] = body.Searches
-
 	q := types.GoogleQuery{
 		Pagesize: 1000,
 		KeywordSeed: types.KeywordSeed{
-			Keywords: keywordList,
+			Keywords: [1]string{body.Keyword},
 		},
 	}
 
@@ -65,14 +62,13 @@ func GetCommercialKeywords(c *fiber.Ctx) error {
 
 func GetSeedKeywords(c *fiber.Ctx) error {
 	type reqBody struct {
-		Searches string `json:"searches"`
+		Keyword string `json:"keyword"`
 	}
-	keywordList := [1]string{""}
 
 	var body reqBody
 	c.BodyParser(&body)
 
-	s := strings.Split(body.Searches, "\n")
+	s := strings.Split(body.Keyword, "\n")
 
 	if len(s) > 1 {
 		return c.Status(400).JSON(fiber.Map{
@@ -80,12 +76,10 @@ func GetSeedKeywords(c *fiber.Ctx) error {
 		})
 	}
 
-	keywordList[0] = body.Searches
-
 	q := types.GoogleQuery{
 		Pagesize: 1000,
 		KeywordSeed: types.KeywordSeed{
-			Keywords: keywordList,
+			Keywords: [1]string{body.Keyword},
 		},
 	}
 
