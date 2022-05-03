@@ -2,25 +2,21 @@ package actions
 
 import (
 	"bytes"
-	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"hash"
-	"io"
 	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 	"strings"
 	"time"
 
-	"github.com/PuerkitoBio/goquery"
 	"github.com/davidalvarez305/soflo_go/server/types"
+	"github.com/davidalvarez305/soflo_go/server/utils"
 )
 
 func ScrapeSearchResultsPage(keyword string) []types.AmazonSearchResultsPage {
@@ -68,7 +64,7 @@ func ScrapeSearchResultsPage(keyword string) []types.AmazonSearchResultsPage {
 	}
 	defer resp.Body.Close()
 
-	products, err := parseHtml(resp.Body, keyword)
+	products, err := utils.ParseHtml(resp.Body, keyword)
 	results = products
 
 	if err != nil {
@@ -77,103 +73,6 @@ func ScrapeSearchResultsPage(keyword string) []types.AmazonSearchResultsPage {
 	}
 
 	return results
-}
-
-func parseHtml(r io.Reader, keyword string) ([]types.AmazonSearchResultsPage, error) {
-	var products []types.AmazonSearchResultsPage
-
-	doc, err := goquery.NewDocumentFromReader(r)
-	if err != nil {
-		fmt.Println("Error trying to parse document.")
-		return products, err
-	}
-
-	doc.Find(".sg-col-inner").Each(func(i int, s *goquery.Selection) {
-		var product types.AmazonSearchResultsPage
-
-		reviewsRegex := regexp.MustCompile("[0-9,]+")
-		moneyRegex := regexp.MustCompile(`[\$]+?(\d+([,\.\d]+)?)`)
-		amazonASIN := regexp.MustCompile(`(\/[A-Z0-9]{10,}\/)`)
-
-		el, _ := s.Find("a").Attr("href")
-		cond := amazonASIN.MatchString(el)
-
-		if cond {
-			name := strings.Join(strings.Split(strings.Split(el, "/")[1], "-"), " ")
-			product.Name = name
-
-			rating := strings.Split(s.Find(".a-icon-alt").Text(), " ")[0]
-			product.Rating = rating
-
-			link := strings.Split(el, "/")[3]
-			product.Link = "https://amazon.com/dp/" + link + os.Getenv("AMAZON_TAG")
-
-			image, _ := s.Find("img").Attr("src")
-			product.Image = image
-
-			product.Category = keyword
-
-			if len(moneyRegex.FindAllString(s.Find(".a-size-base").Text(), 3)) > 0 {
-				price := moneyRegex.FindAllString(s.Find(".a-size-base").Text(), 3)[0]
-				product.Price = price
-			}
-			if len(reviewsRegex.FindAllString(s.Find(".a-size-base").Text(), 2)) > 0 {
-				reviews := reviewsRegex.FindAllString(s.Find(".a-size-base").Text(), 3)[0]
-				product.Reviews = reviews
-
-			}
-			products = append(products, product)
-		}
-	})
-	return products, nil
-}
-
-func formatShortDate(dt time.Time) string {
-	return dt.UTC().Format("20060102")
-}
-
-func formatDate(dt time.Time) string {
-	return dt.UTC().Format("20060102T150405Z")
-}
-
-func makeHash(hash hash.Hash, b []byte) []byte {
-	hash.Reset()
-	hash.Write(b)
-	return hash.Sum(nil)
-}
-
-func buildCanonicalString(method, uri, query, signedHeaders, canonicalHeaders, payloadHash string) string {
-	return strings.Join([]string{
-		method,
-		uri,
-		query,
-		canonicalHeaders + "\n",
-		signedHeaders,
-		payloadHash,
-	}, "\n")
-}
-
-func buildStringToSign(date, credentialScope, canonicalRequest string) string {
-	return strings.Join([]string{
-		"AWS4-HMAC-SHA256",
-		date,
-		credentialScope,
-		hex.EncodeToString(makeHash(sha256.New(), []byte(canonicalRequest))),
-	}, "\n")
-}
-
-func buildCanonicalHeaders(contentType, contentEncoding, host, xAmazonDate, amazonTarget string) string {
-	return strings.Join([]string{"content-encoding:" + contentEncoding, "content-type:" + contentType, "host:" + host, "x-amz-date:" + xAmazonDate, "x-amz-target:" + amazonTarget}, "\n")
-}
-
-func buildSignature(strToSign string, sig []byte) (string, error) {
-	return hex.EncodeToString(HMACSHA256(sig, []byte(strToSign))), nil
-}
-
-func HMACSHA256(key []byte, data []byte) []byte {
-	hash := hmac.New(sha256.New, key)
-	hash.Write(data)
-	return hash.Sum(nil)
 }
 
 func SearchPaapi5Items(keyword string) types.PAAAPI5Response {
@@ -212,23 +111,23 @@ func SearchPaapi5Items(keyword string) types.PAAAPI5Response {
 	amazonTarget := "com.amazon.paapi5.v1.ProductAdvertisingAPIv1.SearchItems"
 	contentEncoding := "amz-1.0"
 	t := time.Now()
-	amazonDate := formatShortDate(t)
-	xAmazonDate := formatDate(t)
+	amazonDate := utils.FormatShortDate(t)
+	xAmazonDate := utils.FormatDate(t)
 	canonicalUri := "/paapi5/searchitems"
 	canonicalQuerystring := ""
-	canonicalHeaders := buildCanonicalHeaders(contentType, contentEncoding, host, xAmazonDate, amazonTarget)
+	canonicalHeaders := utils.BuildCanonicalHeaders(contentType, contentEncoding, host, xAmazonDate, amazonTarget)
 	credentialScope := amazonDate + "/" + region + "/" + service + "/" + "aws4_request"
 	signedHeaders := "content-encoding;content-type;host;x-amz-date;x-amz-target"
 
 	kSecret := os.Getenv("AWS_SECRET_ACCESS_KEY")
-	kDate := HMACSHA256([]byte("AWS4"+kSecret), []byte(amazonDate))
-	kRegion := HMACSHA256(kDate, []byte(region))
-	kService := HMACSHA256(kRegion, []byte(service))
-	signingKey := HMACSHA256(kService, []byte("aws4_request"))
+	kDate := utils.HMACSHA256([]byte("AWS4"+kSecret), []byte(amazonDate))
+	kRegion := utils.HMACSHA256(kDate, []byte(region))
+	kService := utils.HMACSHA256(kRegion, []byte(service))
+	signingKey := utils.HMACSHA256(kService, []byte("aws4_request"))
 
-	canonicalRequest := buildCanonicalString(method, canonicalUri, canonicalQuerystring, signedHeaders, canonicalHeaders, hex.EncodeToString(makeHash(sha256.New(), body)))
-	stringToSign := buildStringToSign(xAmazonDate, credentialScope, canonicalRequest)
-	signature, err := buildSignature(stringToSign, signingKey)
+	canonicalRequest := utils.BuildCanonicalString(method, canonicalUri, canonicalQuerystring, signedHeaders, canonicalHeaders, hex.EncodeToString(utils.MakeHash(sha256.New(), body)))
+	stringToSign := utils.BuildStringToSign(xAmazonDate, credentialScope, canonicalRequest)
+	signature, err := utils.BuildSignature(stringToSign, signingKey)
 	if err != nil {
 		fmt.Println("Error while building signature.")
 		return products

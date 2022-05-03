@@ -5,46 +5,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/davidalvarez305/soflo_go/server/types"
+	"github.com/davidalvarez305/soflo_go/server/utils"
 )
 
-func getGoogleCredentials() (types.GoogleConfigData, error) {
-	data := types.GoogleConfigData{}
-
-	path := os.Getenv("GOOGLE_JSON_PATH")
-
-	file, err := os.Open(path)
-
-	if err != nil {
-		fmt.Println("Could not open Google JSON file.")
-		return data, err
-	}
-	defer file.Close()
-
-	jsonData, err := ioutil.ReadAll(file)
-	if err != nil {
-		fmt.Println("Could not read Google JSON file.")
-		return data, err
-	}
-
-	if err := json.Unmarshal(jsonData, &data); err != nil {
-		fmt.Println("Error while trying to unmarshall JSON data.")
-		return data, err
-	}
-
-	return data, nil
-}
-
 func RequestGoogleAuthToken() (string, error) {
-	config, err := getGoogleCredentials()
+	config, err := utils.GetGoogleCredentials()
 	if err != nil {
 		fmt.Println("Error getting Google credentials")
 		return "", err
@@ -90,7 +62,7 @@ func RequestGoogleAuthToken() (string, error) {
 }
 
 func GetGoogleAccessToken(code string) (string, error) {
-	config, err := getGoogleCredentials()
+	config, err := utils.GetGoogleCredentials()
 	if err != nil {
 		fmt.Println("Error getting Google credentials")
 		return "", err
@@ -146,7 +118,7 @@ func RefreshAuthToken() (string, error) {
 		Token_Type   string `json:"token_type"`
 	}
 
-	config, err := getGoogleCredentials()
+	config, err := utils.GetGoogleCredentials()
 	if err != nil {
 		fmt.Println("Error getting Google credentials")
 		return "", err
@@ -217,36 +189,6 @@ func GetSeedKeywords(results types.GoogleKeywordResults) []string {
 	return data
 }
 
-func filterCommercialKeywords(results types.GoogleKeywordResults, seedKeyword string) []string {
-	var data []string
-	r := regexp.MustCompile("(used|cheap|deals|deal|sale|buy|online|on sale|discount|for sale|near me|best|for|[0-9]+)")
-
-	for i := 0; i < len(results.Results); i++ {
-		cleanKeyword := r.ReplaceAllString(results.Results[i].Text, "")
-		fmt.Println(cleanKeyword)
-
-		compIndex, errOne := strconv.Atoi(results.Results[i].KeywordIdeaMetrics.CompetitionIndex)
-		if errOne != nil {
-			return data
-		}
-
-		searchVol, errTwo := strconv.Atoi(results.Results[i].KeywordIdeaMetrics.AvgMonthlySearches)
-		if errTwo != nil {
-			return data
-		}
-
-		conditionOne := compIndex > 80
-		conditionTwo := searchVol > 100
-		conditionThree := len(strings.Split(strings.TrimSpace(cleanKeyword), seedKeyword)[0]) > 2
-
-		if conditionOne && conditionTwo && conditionThree {
-			data = append(data, cleanKeyword)
-		}
-	}
-
-	return data
-}
-
 func QueryGoogle(query types.GoogleQuery) types.GoogleKeywordResults {
 	time.Sleep(1 * time.Second)
 	var results types.GoogleKeywordResults
@@ -304,7 +246,7 @@ func GetCommercialKeywords(seedKeywords []string) []string {
 		}
 
 		results := QueryGoogle(q)
-		k := filterCommercialKeywords(results, seedKeywords[i])
+		k := utils.FilterCommercialKeywords(results, seedKeywords[i])
 		keywords = append(keywords, k...)
 	}
 
