@@ -8,5 +8,6 @@ import (
 func Google(router fiber.Router) {
 	google := router.Group("google")
 
-	google.Post("/keywords", handlers.GetGoogleKeywords)
+	google.Post("/keywords", handlers.GetCommercialKeywords)
+	google.Post("/seed", handlers.GetSeedKeywords)
 }
