@@ -7,11 +7,13 @@ import (
 	"github.com/davidalvarez305/soflo_go/server/utils"
 )
 
-func GetProducts(keyword string) []types.AmazonSearchResultsPage {
+func CreateReviewPosts(keyword string) ([]types.AmazonSearchResultsPage, error) {
 	var products []types.AmazonSearchResultsPage
+	dictionary := PullContentDictionary()
+	sentences := PullDynamicContent()
 
 	q := types.GoogleQuery{
-		Pagesize: 50,
+		Pagesize: 1000,
 		KeywordSeed: types.KeywordSeed{
 			Keywords: [1]string{keyword},
 		},
@@ -28,6 +30,11 @@ func GetProducts(keyword string) []types.AmazonSearchResultsPage {
 			fmt.Println("Keyword: " + commercialKeywords[i] + "0")
 		}
 		if len(data) > 0 {
+			err := utils.InsertReviewPosts(data, dictionary, sentences)
+
+			if err != nil {
+				fmt.Printf("Error while trying to insert %s: %+v", commercialKeywords[i], err)
+			}
 			products = append(products, data...)
 		}
 		total := fmt.Sprintf("Keyword #%v of %v - %s - Total Products = %v", i+1, len(commercialKeywords), commercialKeywords[i], len(data))
@@ -36,20 +43,6 @@ func GetProducts(keyword string) []types.AmazonSearchResultsPage {
 
 	productsTotal := fmt.Sprintf("Total Products = %v", len(products))
 	fmt.Println(productsTotal)
-
-	return products
-}
-
-func CreateReviewPosts(keyword string) ([]types.AmazonSearchResultsPage, error) {
-	products := GetProducts(keyword)
-	dictionary := PullContentDictionary()
-	sentences := PullDynamicContent()
-
-	err := utils.InsertReviewPosts(products, dictionary, sentences)
-
-	if err != nil {
-		return nil, err
-	}
 
 	return products, nil
 }

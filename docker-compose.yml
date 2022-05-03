@@ -1,0 +1,24 @@
+version: '3.7'
+
+services:
+  server:
+    build: ./server
+    restart: always
+    env_file:
+      - prod.env
+    image: iamdavidmiguelalvarez/soflo_go:server
+    ports:
+    - "4007:4007"
+  postgres:
+    build: ./postgres
+    restart: always
+    env_file:
+      - prod.env
+    image: iamdavidmiguelalvarez/soflo_go:postgres
+    volumes:
+    - static_data:/var/lib/postgresql/data/pgdata/
+    ports:
+      - "5432:5432"
+
+volumes:
+  static_data:
