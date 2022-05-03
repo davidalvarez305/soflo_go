@@ -2,7 +2,7 @@ package models
 
 type Category struct {
 	ID             int
-	Title          string
+	Name           string
 	Slug           string `gorm:"unique"`
 	ReviewProducts []ReviewPost
 }

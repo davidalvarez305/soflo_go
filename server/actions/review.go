@@ -22,7 +22,7 @@ func GetProducts(keyword string) []types.AmazonSearchResultsPage {
 	seedKeywords := GetSeedKeywords(KW_ARR)
 	commercialKeywords := GetCommercialKeywords(seedKeywords)
 
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 1; i++ {
 		data := ScrapeSearchResultsPage(commercialKeywords[i])
 		if len(data) == 0 {
 			fmt.Println("Keyword: " + commercialKeywords[i] + "0")

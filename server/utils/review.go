@@ -98,8 +98,8 @@ func insertCategories(products []types.AmazonSearchResultsPage) ([]models.Catego
 
 	for _, a := range c {
 		cat := models.Category{
-			Title: strings.Title(a),
-			Slug:  CreateCategorySlug(a),
+			Name: strings.Title(a),
+			Slug: CreateCategorySlug(a),
 		}
 		categories = append(categories, cat)
 	}
@@ -138,9 +138,9 @@ func InsertReviewPosts(products []types.AmazonSearchResultsPage, dictionary []ty
 
 	for i := 0; i < len(products); i++ {
 		var categoryId int
-		for _, a := range c {
-			if strings.Title(products[i].Category) == a.Title {
-				categoryId = a.ID
+		for _, cat := range c {
+			if strings.Title(products[i].Category) == cat.Name {
+				categoryId = cat.ID
 			}
 		}
 		p := CreateReviewPostFields(products[i], dictionary, sentences, categoryId)
