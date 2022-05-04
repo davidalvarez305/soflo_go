@@ -45,19 +45,13 @@ chmod 400 $KEY_NAME.pem
 # Upload to S3
 aws s3 cp $KEY_NAME.pem $S3_BUCKET
 
-# Create VPC
-VPC_ID=$(aws ec2 create-vpc --ipv6-cidr-block-network-border-group $REGION-lax-1 --cidr-block 10.0.0.0/16 | jq '.Vpc' | grep VpcId | grep -Eoh "vpc-[a-zA-Z0-9]+" )
-
-# Create Security Group
-SG_ID=$(aws ec2 create-security-group --group-name $SG_GROUP_NAME --description "$DOMAIN Security Group" --vpc-id $VPC_ID | jq '.GroupId' | grep -Eoh "sg-[a-zA-Z0-9]+" )
-
 # Create EC2 Instance
-aws ec2 run-instances --instance-names $DOMAIN --availability-zone $AVAILABILITY_ZONE \
-    --image-id $AMI_ID --instance-type $INSTANCE_SIZE --count 1 \
-    --key-name $KEY_NAME --security-group-ids $SG_ID --subnet-id subnet-6e7f829e
+INSTANCE_ID=$(aws ec2 run-instances --image-id $AMI_ID --instance-type $INSTANCE_SIZE \
+    --count 1 --associate-public-ip-address \
+    --key-name $KEY_NAME | grep InstanceId | grep -Eoh "i-[a-z0-9]+")
 
-# Allocate Static IP
-aws lightsail allocate-static-ip --static-ip-name $STATIC_IP_NAME
+# Get Instance Public Id
+EC2_PUBLIC_ID=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID | grep PublicIpAddress | greg -Eoh "[0-9.]+")
 
-# Attach Static IP
-aws lightsail attach-static-ip --static-ip-name $STATIC_IP_NAME --instance-name $DOMAIN
+# Update Hosted Zone A Record to EC2 Public Id
+aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID
