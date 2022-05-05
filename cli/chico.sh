@@ -56,7 +56,8 @@ EC2_PUBLIC_ID=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID | grep Pu
 Text="$(jq \
     --arg ip "$EC2_PUBLIC_ID" \
     --arg dns "$DOMAIN" \
-    '.Changes[].ResourceRecordSet.ResourceRecords = [{ Value: $ip }] | .Changes[].ResourceRecordSet.Name = $dns' \
+    '.Changes[].ResourceRecordSet.ResourceRecords = [{ Value: $ip }] | \
+    .Changes[].ResourceRecordSet.Name = $dns' \
     change-zone.json)" && echo -E "${Text}" > change-zone.json
 
 aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch file://change-zone.json
