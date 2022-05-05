@@ -1,3 +1,2 @@
-google.json
-register-domain.json
+*/*.json
 */*.pem
