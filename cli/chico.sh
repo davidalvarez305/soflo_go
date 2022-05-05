@@ -16,8 +16,7 @@ then
 fi
 
 # Register Domain
-text="$(jq --arg domain "$DOMAIN" '.DomainName = $domain' register-domain.json)" && \
-echo -E "${text}" > register-domain.json
+Content="$(jq --arg domain "$DOMAIN" '.DomainName = $domain' register-domain.json)" && echo -E "${Content}" > register-domain.json
 
 aws route53domains register-domain --region $REGION --cli-input-json file://register-domain.json
 
@@ -28,7 +27,7 @@ RAW_NS=$(aws route53 get-hosted-zone --id $ZONE_ID | jq '.DelegationSet' | grep 
 
 nameservers=""
 
-#for ns in $RAW_NS
+for ns in $RAW_NS
 do
     nameservers+="Name=$ns "
 done
@@ -54,4 +53,10 @@ INSTANCE_ID=$(aws ec2 run-instances --image-id $AMI_ID --instance-type $INSTANCE
 EC2_PUBLIC_ID=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID | grep PublicIpAddress | greg -Eoh "[0-9.]+")
 
 # Update Hosted Zone A Record to EC2 Public Id
-aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID
+Text="$(jq \
+    --arg ip "$EC2_PUBLIC_ID" \
+    --arg dns "$DOMAIN" \
+    '.Changes[].ResourceRecordSet.ResourceRecords = [{ Value: $ip }] | .Changes[].ResourceRecordSet.Name = $dns' \
+    change-zone.json)" && echo -E "${Text}" > change-zone.json
+
+aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch file://change-zone.json
