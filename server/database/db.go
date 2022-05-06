@@ -8,6 +8,7 @@ import (
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 
 	"github.com/davidalvarez305/soflo_go/server/models"
 )
@@ -38,7 +39,11 @@ func Connect() {
 		DB:       os.Getenv("POSTGRES_DB"),
 	}
 
-	db, err := gorm.Open(postgres.Open(connToString(conn)), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(connToString(conn)), &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{
+			SingularTable: true,
+		},
+	})
 
 	if err != nil {
 		fmt.Printf("Error connecting to the DB: %s\n", err.Error())
