@@ -5,7 +5,7 @@ services:
     build: ./server
     restart: always
     env_file:
-      - prod.env
+      - .env
     image: iamdavidmiguelalvarez/soflo_go:server
     ports:
     - "4007:4007"

@@ -1,0 +1,6 @@
+*/*.json
+*/*.pem
+*/*.env
+*/*.sql
+*/*.sh
+credentials
