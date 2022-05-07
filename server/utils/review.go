@@ -112,7 +112,7 @@ func insertCategories(products []types.AmazonSearchResultsPage) ([]models.Catego
 		return nil, db.Error
 	}
 
-	sel := database.DB.Raw("SELECT * FROM categories;").Scan(&categories)
+	sel := database.DB.Raw("SELECT * FROM category;").Scan(&categories)
 
 	if sel.Error != nil {
 		return nil, sel.Error

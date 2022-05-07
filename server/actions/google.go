@@ -180,8 +180,6 @@ func GetSeedKeywords(results types.GoogleKeywordResults) []string {
 		conditionThree := keywordLength >= 2 && keywordLength <= 4
 
 		if conditionOne && conditionTwo && conditionThree {
-
-			fmt.Printf("Comp Index for %v: %+v", results.Results[i].Text, results.Results[i].KeywordIdeaMetrics.CompetitionIndex)
 			data = append(data, results.Results[i].Text)
 		}
 	}
