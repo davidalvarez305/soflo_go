@@ -2,3 +2,5 @@
 */*.pem
 */*.env
 */*.sql
+*/*.sh
+cli

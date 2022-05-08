@@ -1,6 +1,0 @@
-*/*.json
-*/*.pem
-*/*.env
-*/*.sql
-*/*.sh
-chico.sh
