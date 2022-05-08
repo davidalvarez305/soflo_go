@@ -13,7 +13,7 @@ services:
     build: ./postgres
     restart: always
     env_file:
-      - prod.env
+      - .env
     image: iamdavidmiguelalvarez/soflo_go:postgres
     volumes:
     - static_data:/var/lib/postgresql/data/pgdata/
