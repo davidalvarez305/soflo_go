@@ -3,12 +3,14 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/davidalvarez305/soflo_go/server/types"
 )
 
@@ -67,4 +69,20 @@ func GetGoogleCredentials() (types.GoogleConfigData, error) {
 	}
 
 	return data, nil
+}
+
+func ParseGoogleSERP(r io.Reader) ([]string, error) {
+	var keywords []string
+
+	doc, err := goquery.NewDocumentFromReader(r)
+	if err != nil {
+		fmt.Println("Error trying to parse document.")
+		return keywords, err
+	}
+
+	doc.Find(".ULSxyf").Each(func(i int, s *goquery.Selection) {
+		el := s.Find("a").Text()
+		fmt.Printf("%+v\n", strings.Split(el, "?"))
+	})
+	return keywords, nil
 }

@@ -20,7 +20,6 @@ import (
 )
 
 func ScrapeSearchResultsPage(keyword string) []types.AmazonSearchResultsPage {
-	time.Sleep(1 * time.Second)
 	var results []types.AmazonSearchResultsPage
 
 	str := strings.Join(strings.Split(keyword, " "), "+")

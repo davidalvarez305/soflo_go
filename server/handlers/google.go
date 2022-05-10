@@ -103,3 +103,12 @@ func GetSeedKeywords(c *fiber.Ctx) error {
 		"data": seedKeywords,
 	})
 }
+
+func GetPeopleAlsoAsk(c *fiber.Ctx) error {
+
+	keywords := actions.CrawlGoogleSERP("sell my junk car for 500")
+
+	return c.Status(200).JSON(fiber.Map{
+		"data": keywords,
+	})
+}

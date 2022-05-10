@@ -2,10 +2,14 @@ package actions
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
+	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -253,4 +257,59 @@ func GetCommercialKeywords(seedKeywords []string) []string {
 	fmt.Println("Commercial Keywords: ", len(keywords))
 
 	return keywords
+}
+
+func CrawlGoogleSERP(keywords string) []string {
+	var results []string
+
+	str := strings.Join(strings.Split(keywords, " "), "+")
+
+	serp := fmt.Sprintf("https://www.google.com/search?q=%s", str)
+
+	host := os.Getenv("P_HOST")
+	username := os.Getenv("P_USERNAME")
+	sessionId := fmt.Sprint(rand.Intn(1000000))
+	path := username + sessionId + ":" + host
+
+	u, err := url.Parse(path)
+	if err != nil {
+		log.Fatal(err)
+		return results
+	}
+
+	tr := &http.Transport{
+		Proxy: http.ProxyURL(u),
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	client := &http.Client{
+		Transport: tr,
+	}
+
+	req, err := http.NewRequest("GET", serp, nil)
+
+	if err != nil {
+		fmt.Println("Request failed: ", err)
+		return results
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error while fetching Google SERP", err)
+		return results
+	}
+	defer resp.Body.Close()
+
+	kws, err := utils.ParseGoogleSERP(resp.Body)
+	results = kws
+
+	if err != nil {
+		fmt.Println("Error while parsing HTML.")
+		return kws
+	}
+
+	return results
 }

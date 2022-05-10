@@ -10,4 +10,5 @@ func Google(router fiber.Router) {
 
 	google.Post("/keywords", handlers.GetCommercialKeywords)
 	google.Post("/seed", handlers.GetSeedKeywords)
+	google.Post("/crawl", handlers.GetPeopleAlsoAsk)
 }
