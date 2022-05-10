@@ -27,7 +27,7 @@ func CreateReviewPosts(keyword string) ([]types.AmazonSearchResultsPage, error) 
 	for i := 0; i < len(commercialKeywords); i++ {
 		data := ScrapeSearchResultsPage(commercialKeywords[i])
 		if len(data) == 0 {
-			fmt.Println("Keyword: " + commercialKeywords[i] + "0")
+			fmt.Println("Keyword: " + commercialKeywords[i] + "0" + "\n")
 		}
 		if len(data) > 0 {
 			err := utils.InsertReviewPosts(data, dictionary, sentences)
@@ -37,7 +37,7 @@ func CreateReviewPosts(keyword string) ([]types.AmazonSearchResultsPage, error) 
 			}
 			products = append(products, data...)
 		}
-		total := fmt.Sprintf("Keyword #%v of %v - %s - Total Products = %v", i+1, len(commercialKeywords), commercialKeywords[i], len(data))
+		total := fmt.Sprintf("Keyword #%v of %v - %s - Total Products = %v\n", i+1, len(commercialKeywords), commercialKeywords[i], len(data))
 		fmt.Println(total)
 	}
 

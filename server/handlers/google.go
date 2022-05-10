@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/davidalvarez305/soflo_go/server/actions"
@@ -40,6 +41,7 @@ func GetCommercialKeywords(c *fiber.Ctx) error {
 	}
 
 	seedKeywords := actions.GetSeedKeywords(results)
+	fmt.Printf("Length of Seed Keywords: %v", seedKeywords)
 
 	if len(seedKeywords) == 0 {
 		return c.Status(404).JSON(fiber.Map{
@@ -48,6 +50,7 @@ func GetCommercialKeywords(c *fiber.Ctx) error {
 	}
 
 	keywords := actions.GetCommercialKeywords(seedKeywords)
+	fmt.Printf("Length of Commercial Keywords: %v", keywords)
 
 	if len(keywords) == 0 {
 		return c.Status(404).JSON(fiber.Map{
